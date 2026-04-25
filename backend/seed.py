@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 import asyncpg
+from services.embeddings import ensure_collections, upsert_artwork, upsert_artist
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -34,7 +35,7 @@ async def seed():
     print(f"✓ {len(artist_seen)} artists seeded")
 
     # Artworks
-    count = 0
+    artworks_rows: list[dict] = []
     with open(DATA_DIR / "artworks.csv") as f:
         for row in csv.DictReader(f):
             await conn.execute(
@@ -60,8 +61,8 @@ async def seed():
                 row["notable_owners"] or None,
                 float(row["bart_score"]) if row["bart_score"] else None,
             )
-            count += 1
-    print(f"✓ {count} artworks seeded")
+            artworks_rows.append(row)
+    print(f"✓ {len(artworks_rows)} artworks seeded")
 
     # Sales
     count = 0
@@ -97,6 +98,47 @@ async def seed():
     print(f"✓ {count} sales seeded")
 
     await conn.close()
+
+    # Qdrant embeddings
+    print("Embedding into Qdrant…")
+    await ensure_collections()
+
+    # Embed artworks
+    seen_artists: dict[str, dict] = {}
+    for row in artworks_rows:
+        text = " ".join(filter(None, [
+            row.get("title"),
+            row.get("artist_name"),
+            row.get("description"),
+            row.get("artwork_style"),
+            row.get("creation_context"),
+        ]))
+        await upsert_artwork(
+            artwork_id=row["artwork_id"],
+            text=text,
+            payload={
+                "artist_id": row["artist_id"],
+                "artist_name": row["artist_name"],
+                "category": row["category"],
+                "title": row["title"],
+                "bart_score": float(row["bart_score"]) if row["bart_score"] else None,
+            },
+        )
+        if row["artist_id"] not in seen_artists:
+            seen_artists[row["artist_id"]] = row
+
+    print(f"✓ {len(artworks_rows)} artworks embedded")
+
+    # Embed artists
+    for artist_id, row in seen_artists.items():
+        text = row["artist_name"]
+        await upsert_artist(
+            artist_id=artist_id,
+            text=text,
+            payload={"name": row["artist_name"]},
+        )
+    print(f"✓ {len(seen_artists)} artists embedded")
+
     print("✓ Done")
 
 

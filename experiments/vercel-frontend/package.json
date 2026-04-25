@@ -1,0 +1,9 @@
+{
+  "name": "bart-vercel-frontend-test",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node smoke-test.mjs",
+    "test": "node smoke-test.mjs"
+  }
+}

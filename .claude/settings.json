@@ -42,32 +42,21 @@
       "Bash(curl -s http://localhost:8000/api/v1/artworks)",
       "Bash(npx create-next-app@latest frontend --typescript --tailwind --app --no-eslint --no-src-dir --import-alias \"@/*\" --yes)",
       "Bash(npm install *)",
-      "Read(//home/ad/.claude/**)"
+      "Read(//home/ad/.claude/**)",
+      "Bash(npm run *)",
+      "Bash(nvm use *)",
+      "Read(//home/ad/.nvm/versions/node/**)",
+      "Read(//usr/local/lib/**)",
+      "Read(//opt/**)",
+      "Bash(npx vercel *)",
+      "Bash(npx tsc *)",
+      "Bash(.venv/bin/python -c ' *)"
     ],
     "additionalDirectories": [
       "/home/ad/Desktop/bart/frontend/app/artworks"
     ]
   },
   "enabledPlugins": {
-    "vercel@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true,
-    "firecrawl@claude-plugins-official": true,
-    "impeccable@impeccable": true,
-    "ui-ux-pro-max@ui-ux-pro-max-skill": true
-  },
-  "extraKnownMarketplaces": {
-    "impeccable": {
-      "source": {
-        "source": "github",
-        "repo": "pbakaus/impeccable"
-      }
-    },
-    "ui-ux-pro-max-skill": {
-      "source": {
-        "source": "github",
-        "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
-      }
-    }
+    "vercel@claude-plugins-official": true
   }
 }
