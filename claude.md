@@ -34,6 +34,23 @@ bart/
 
 ---
 
+## Python Tooling
+
+Use `uv` for everything Python. No bare `pip`, no `python -m venv`.
+
+Every Python package (backend, experiments) must have a `pyproject.toml`. Anyone cloning the repo runs `uv sync` and gets a working environment — no other steps.
+
+```bash
+uv sync                  # install all deps, create .venv (run this first)
+uv run python main.py    # run a script inside the project env
+uv add fastapi           # add a dependency (updates pyproject.toml + uv.lock)
+uv remove package        # remove a dependency
+```
+
+Commit both `pyproject.toml` and `uv.lock`. Never commit `.venv/`.
+
+---
+
 ## Rules
 
 **1. Plan first, then code.**

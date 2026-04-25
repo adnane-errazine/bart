@@ -1,0 +1,15 @@
+[project]
+name = "bart-infra-test"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "asyncpg",
+    "qdrant-client",
+    "openai",
+    "anthropic",
+    "python-dotenv",
+    "pyngrok",
+    "httpx",
+]

@@ -20,10 +20,54 @@
       "WebFetch(domain:community.pinecone.io)",
       "WebFetch(domain:ranksquire.com)",
       "WebFetch(domain:karthikeyanrathinam.medium.com)",
-      "WebFetch(domain:www.freetiers.com)"
+      "WebFetch(domain:www.freetiers.com)",
+      "Bash(python3 -m venv .venv)",
+      "Bash(.venv/bin/pip install *)",
+      "Bash(.venv/bin/python main.py)",
+      "Bash(curl -s http://localhost:8001/)",
+      "Bash(python3 -m json.tool)",
+      "Bash(ngrok version *)",
+      "Bash(curl -s http://localhost:8001/health)",
+      "Bash(nslookup db.rlcpzbtfjhkehnixdwpo.supabase.co)",
+      "Bash(python3 -c \"import socket; print\\(socket.getaddrinfo\\('db.rlcpzbtfjhkehnixdwpo.supabase.co', 5432\\)\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(uv --version)",
+      "Bash(uv python *)",
+      "Bash(uv sync *)",
+      "Bash(uv run *)",
+      "Bash(pkill -f \"python main.py\")",
+      "Bash(pkill -f ngrok)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:8000/api/v1/artworks)",
+      "Bash(npx create-next-app@latest frontend --typescript --tailwind --app --no-eslint --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npm install *)",
+      "Read(//home/ad/.claude/**)"
+    ],
+    "additionalDirectories": [
+      "/home/ad/Desktop/bart/frontend/app/artworks"
     ]
   },
   "enabledPlugins": {
-    "vercel@claude-plugins-official": true
+    "vercel@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "firecrawl@claude-plugins-official": true,
+    "impeccable@impeccable": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true
+  },
+  "extraKnownMarketplaces": {
+    "impeccable": {
+      "source": {
+        "source": "github",
+        "repo": "pbakaus/impeccable"
+      }
+    },
+    "ui-ux-pro-max-skill": {
+      "source": {
+        "source": "github",
+        "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
+      }
+    }
   }
 }
