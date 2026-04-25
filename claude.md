@@ -76,10 +76,27 @@ Minimum code that solves the problem. No abstractions for one-off use. No specul
 **8. Security basics.**
 API keys in env vars only. No hardcoded credentials. Every user-facing page shows: *"For informational purposes only. Not investment advice."*
 
+**9. Session protocol (multi-dev).**
+Two devs share this repo, each running their own Claude Code. Memory is local — the only shared channel is the repo itself.
+
+At session **start**, read in this order:
+1. `docs/handoff.md` (~30 lines, narrative state from last session)
+2. `git log --oneline -20` (commits since)
+3. `git status` (uncommitted work)
+
+At session **end**, before stopping:
+1. **Overwrite** `docs/handoff.md` (don't append — keep it short and fresh): just-done / up-next / gotchas / files-touched.
+2. Commit with descriptive messages.
+3. `git push` so the other dev's session sees it.
+
+Pull before starting non-trivial work to avoid conflicts on `data.ts` / `architecture.md` / `handoff.md`.
+
 ---
 
 ## Before You Ship a Task
 
 - [ ] `docs/architecture.md` updated if anything structural changed
+- [ ] `docs/handoff.md` updated with what's just done + what's next
 - [ ] `data/static/` still valid
 - [ ] No hardcoded URLs or credentials
+- [ ] Pushed to remote
