@@ -1,69 +1,67 @@
-# CLAUDE.md
+# CLAUDE.md — BART
 
+Read this before touching any code.
 
-
-Technical advice to follow: 
-
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
-
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
-
-## 1. Think Before Coding
-
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
-
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
-
-## 2. Simplicity First
-
-**Minimum code that solves the problem. Nothing speculative.**
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-## 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-## 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+Full product brief: [docs/brainstorming.md](docs/brainstorming.md)
+Living architecture doc: [docs/architecture.md](docs/architecture.md)
 
 ---
 
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+## What We're Building
+
+Bloomberg Terminal for the art market. Indices + analytics + AI agents. 24h hackathon, 2 devs coding.
+
+---
+
+## Repo Structure
+
+```
+bart/
+├── frontend/        ← Next.js 14 + Tailwind + shadcn/ui + Recharts
+├── backend/         ← FastAPI + Python + statsmodels
+├── data/
+│   ├── mock/        ← generated dataset
+│   └── static/      ← pre-calculated index JSON — DEMO FALLBACK, never delete
+├── agents/          ← AI agent prompts and logic
+├── deployment/
+│   ├── web/         ← Vercel (front) + Railway (back)
+│   └── mobile/      ← LOCKED — do not touch unless explicitly told to
+└── docs/
+    ├── brainstorming.md
+    └── architecture.md   ← update this when you change something structural
+```
+
+---
+
+## Rules
+
+**1. Plan first, then code.**
+One short paragraph before any non-trivial task: what you're doing, what you're assuming, what could break.
+
+**2. Log structural changes.**
+If you add a route, change a schema, add a dependency, or restructure a module — update `docs/architecture.md`. One bullet is enough. Don't skip this.
+
+**3. Mark assumptions in code.**
+If you're guessing at something (data shape, API behavior, business logic) — write `# HYPOTHESIS: ...` on that line. Remove it when confirmed.
+
+**4. Protect the demo fallback.**
+`data/static/` holds pre-calculated indices for the pitch. If the backend dies during the demo, the frontend must still work from these files. Never delete them. If you change index logic, regenerate them.
+
+**5. API contract — agree once, then freeze.**
+Frontend and backend align on all routes at the start. Routes live in `docs/architecture.md`. No unilateral changes. Frontend uses a single API client file, no hardcoded URLs in components.
+
+**6. Keep it simple.**
+Minimum code that solves the problem. No abstractions for one-off use. No speculative features. If you write 200 lines and it could be 50, rewrite it.
+
+**7. No blockchain, no tokenization.** Hard rule. Don't introduce it, don't reference it.
+
+**8. Security basics.**
+API keys in env vars only. No hardcoded credentials. Every user-facing page shows: *"For informational purposes only. Not investment advice."*
+
+---
+
+## Before You Ship a Task
+
+- [ ] `docs/architecture.md` updated if anything structural changed
+- [ ] `data/static/` still valid
+- [ ] No hardcoded URLs or credentials
