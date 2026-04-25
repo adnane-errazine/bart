@@ -1,0 +1,2169 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440, initial-scale=1.0">
+<title>BART — Art Analytics Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+:root{--bg-primary:#0A0A0B;--bg-secondary:#131316;--bg-tertiary:#1A1A1F;--bg-elevated:#1F1F25;--border-subtle:#26262E;--border-strong:#3A3A45;--text-primary:#E8E8EC;--text-secondary:#9EA0A6;--text-tertiary:#6B6D75;--text-disabled:#45464E;--accent-amber:#D4A017;--accent-amber-dim:#8C6B0F;--color-up:#4F9D69;--color-down:#C85450;--color-neutral:#8A8B91;--color-warning:#C99A3D;--tag-observed:#6B8FB8;--tag-estimated:#B8722F;--tag-interpreted:#8C7AAE;--font-sans:'IBM Plex Sans',-apple-system,system-ui,sans-serif;--font-serif:'Source Serif 4','Times New Roman',Georgia,serif;--font-mono:'IBM Plex Mono','Roboto Mono',monospace}
+[data-theme="light"]{--bg-primary:#FAFAF9;--bg-secondary:#F2F2F0;--bg-tertiary:#E9E9E6;--bg-elevated:#FFFFFF;--border-subtle:#DCDCD7;--border-strong:#B8B8B2;--text-primary:#18181B;--text-secondary:#4D4F55;--text-tertiary:#75777E;--text-disabled:#A8AAB0;--accent-amber:#A57E0E;--accent-amber-dim:#D4A017;--color-up:#2E7045;--color-down:#A33A36;--color-neutral:#6E6F75;--color-warning:#8C6B19;--tag-observed:#4A6F94;--tag-estimated:#94521C;--tag-interpreted:#6F5C8E}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font-sans);font-size:13px;font-weight:400;line-height:1.45;color:var(--text-primary);background:var(--bg-primary);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit;background:none;border:none;outline:none}
+button{cursor:pointer}
+a{color:inherit;text-decoration:none}
+ul,ol{list-style:none}
+table{border-collapse:collapse;width:100%}
+img,svg{display:block;max-width:100%}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg-primary)}
+::-webkit-scrollbar-thumb{background:var(--border-strong)}
+::-webkit-scrollbar-thumb:hover{background:var(--text-tertiary)}
+::selection{background:var(--accent-amber);color:var(--bg-primary)}
+.app{display:grid;grid-template-columns:200px 1fr;grid-template-rows:60px 1fr;height:100vh;width:100vw}
+.sidebar{grid-row:1/span 2;grid-column:1;background:var(--bg-secondary);border-right:1px solid var(--border-subtle);display:flex;flex-direction:column;overflow-y:auto}
+.topbar{grid-row:1;grid-column:2;background:var(--bg-secondary);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:16px;padding:0 20px}
+.main{grid-row:2;grid-column:2;background:var(--bg-primary);overflow-y:auto;position:relative}
+.brand{padding:20px 16px 16px;border-bottom:1px solid var(--border-subtle)}
+.brand-name{font-family:var(--font-serif);font-size:22px;font-weight:600;letter-spacing:-0.02em;color:var(--text-primary)}
+.brand-name .accent{color:var(--accent-amber)}
+.brand-tag{font-size:9px;text-transform:uppercase;letter-spacing:0.14em;color:var(--text-tertiary);margin-top:2px}
+.nav-section{padding:12px 0}
+.nav-section + .nav-section{border-top:1px solid var(--border-subtle)}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-tertiary);font-weight:500;padding:4px 16px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:7px 16px;font-size:12.5px;color:var(--text-secondary);border-left:2px solid transparent;cursor:pointer;user-select:none;transition:background .08s}
+.nav-item:hover{background:var(--bg-tertiary);color:var(--text-primary)}
+.nav-item.active{color:var(--text-primary);background:var(--bg-tertiary);border-left-color:var(--accent-amber)}
+.nav-item svg{width:14px;height:14px;stroke-width:1.6}
+.nav-item-badge{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary)}
+.sidebar-footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border-subtle);display:flex;align-items:center;gap:10px}
+.user-avatar{width:28px;height:28px;background:var(--bg-tertiary);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--text-primary)}
+.user-meta{flex:1;min-width:0}
+.user-name{font-size:12px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-tier{font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent-amber);font-weight:500}
+.icon-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);border:1px solid transparent;background:transparent}
+.icon-btn:hover{color:var(--text-primary);border-color:var(--border-strong)}
+.icon-btn svg{width:14px;height:14px;stroke-width:1.6}
+.searchbar{position:relative;width:360px;height:32px;background:var(--bg-tertiary);border:1px solid var(--border-subtle);display:flex;align-items:center;padding:0 10px;gap:8px;transition:border-color .1s}
+.searchbar:focus-within{border-color:var(--accent-amber)}
+.searchbar svg{width:13px;height:13px;stroke-width:1.6;color:var(--text-tertiary)}
+.searchbar input{flex:1;font-size:12px;color:var(--text-primary)}
+.searchbar input::placeholder{color:var(--text-tertiary)}
+.searchbar-kbd{font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);border:1px solid var(--border-subtle);padding:1px 5px}
+.ticker-rail{flex:1;height:32px;background:var(--bg-tertiary);border:1px solid var(--border-subtle);overflow:hidden;position:relative}
+.ticker-track{display:flex;align-items:center;height:100%;gap:28px;padding:0 16px;white-space:nowrap;animation:ticker 60s linear infinite}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-item{display:inline-flex;align-items:center;gap:8px;font-size:11px}
+.ticker-name{text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);font-weight:500;font-size:10px}
+.ticker-value{font-family:var(--font-mono);font-weight:500;color:var(--text-primary)}
+.topbar-status{display:flex;align-items:center;gap:16px;font-size:11px;color:var(--text-tertiary)}
+.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--color-up);margin-right:6px;box-shadow:0 0 0 2px color-mix(in srgb,var(--color-up) 18%,transparent)}
+.topbar-divider{width:1px;height:20px;background:var(--border-subtle)}
+.notif-btn{position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-subtle);color:var(--text-secondary);background:transparent}
+.notif-btn:hover{color:var(--text-primary);border-color:var(--border-strong)}
+.notif-btn svg{width:14px;height:14px;stroke-width:1.6}
+.notif-count{position:absolute;top:-4px;right:-4px;font-family:var(--font-mono);font-size:9px;background:var(--accent-amber);color:#0A0A0B;padding:1px 4px;font-weight:500;min-width:14px;text-align:center}
+.h1{font-family:var(--font-serif);font-size:28px;font-weight:600;letter-spacing:-0.01em;color:var(--text-primary);line-height:1.15}
+.h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-primary)}
+.h3{font-size:12px;font-weight:600;color:var(--text-primary)}
+.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-tertiary);font-weight:500}
+.eyebrow .sep{margin:0 6px;color:var(--border-strong)}
+.caption{font-size:11px;color:var(--text-tertiary);letter-spacing:0.02em}
+.mono{font-family:var(--font-mono);font-weight:500}
+.serif{font-family:var(--font-serif)}
+.text-secondary{color:var(--text-secondary)}
+.text-tertiary{color:var(--text-tertiary)}
+.text-up{color:var(--color-up)}
+.text-down{color:var(--color-down)}
+.text-amber{color:var(--accent-amber)}
+.page{display:none;padding:24px 32px 48px;max-width:1600px}
+.page.active{display:block}
+.page-header{display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:16px;margin-bottom:20px;border-bottom:1px solid var(--border-subtle);gap:24px}
+.page-header-left{flex:1;min-width:0}
+.page-header-right{display:flex;align-items:center;gap:8px}
+.section{margin-bottom:32px}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:8px 0;margin-bottom:12px;border-bottom:1px solid var(--border-subtle)}
+.section-header-left{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.section-tools{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-tertiary)}
+.tool-btn{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-secondary);padding:4px 8px;border:1px solid var(--border-subtle);background:transparent;cursor:pointer}
+.tool-btn:hover{color:var(--text-primary);border-color:var(--border-strong)}
+.tool-btn.active{color:var(--accent-amber);border-color:var(--accent-amber)}
+.index-strip{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--border-subtle);background:var(--bg-secondary);margin-bottom:24px}
+.index-card{padding:14px 16px;border-right:1px solid var(--border-subtle);cursor:pointer;transition:background .08s}
+.index-card:last-child{border-right:none}
+.index-card:hover{background:var(--bg-tertiary)}
+.index-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.index-card-name{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-secondary);font-weight:600}
+.index-card-value{font-family:var(--font-mono);font-size:24px;font-weight:500;color:var(--text-primary);letter-spacing:-0.02em;line-height:1.1;margin-bottom:4px}
+.index-card-meta{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.index-card-spark{width:80px;height:24px}
+.delta{font-family:var(--font-mono);font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:2px}
+.delta.up{color:var(--color-up)}
+.delta.down{color:var(--color-down)}
+.delta.neutral{color:var(--text-secondary)}
+.delta-tri{font-size:8px;line-height:1}
+.panel{background:var(--bg-secondary);border:1px solid var(--border-subtle)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border-subtle);background:var(--bg-secondary)}
+.panel-title{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;color:var(--text-primary)}
+.panel-meta{font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary)}
+.panel-body{padding:14px}
+.panel-body.flush{padding:0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.grid-1-2{display:grid;grid-template-columns:1fr 2fr;gap:16px}
+.grid-3-2{display:grid;grid-template-columns:3fr 2fr;gap:16px}
+.dtable{width:100%;font-size:12px;border-collapse:collapse}
+.dtable thead th{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-tertiary);font-weight:500;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border-subtle);background:var(--bg-secondary);position:sticky;top:0;white-space:nowrap}
+.dtable thead th.num{text-align:right}
+.dtable tbody td{padding:9px 12px;border-bottom:1px solid var(--border-subtle);color:var(--text-primary);vertical-align:middle;white-space:nowrap}
+.dtable tbody td.num{text-align:right;font-family:var(--font-mono);font-weight:500}
+.dtable tbody td.muted{color:var(--text-secondary)}
+.dtable tbody tr:hover td{background:var(--bg-tertiary)}
+.dtable tbody tr.clickable{cursor:pointer}
+.dtable tbody tr:last-child td{border-bottom:none}
+.dtable .row-icon{display:inline-flex;align-items:center;gap:8px}
+.dtable .row-thumb{width:28px;height:28px;background:var(--bg-tertiary);border:1px solid var(--border-subtle);flex-shrink:0;overflow:hidden}
+.dtable .row-name{font-weight:500}
+.dtable .row-sub{font-size:10px;color:var(--text-tertiary)}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;font-weight:500;padding:2px 8px;border:1px solid var(--border-subtle);color:var(--text-secondary)}
+.tag-dot{display:inline-block;width:6px;height:6px;border-radius:50%}
+.tag.observed .tag-dot,.tag-dot.observed{background:var(--tag-observed)}
+.tag.estimated .tag-dot,.tag-dot.estimated{background:var(--tag-estimated)}
+.tag.interpreted .tag-dot,.tag-dot.interpreted{background:var(--tag-interpreted)}
+.tag.observed{color:var(--tag-observed);border-color:color-mix(in srgb,var(--tag-observed) 35%,transparent)}
+.tag.estimated{color:var(--tag-estimated);border-color:color-mix(in srgb,var(--tag-estimated) 35%,transparent)}
+.tag.interpreted{color:var(--tag-interpreted);border-color:color-mix(in srgb,var(--tag-interpreted) 35%,transparent)}
+.pill{display:inline-flex;align-items:center;font-size:10px;letter-spacing:0.04em;padding:3px 8px;background:var(--bg-tertiary);border:1px solid var(--border-subtle);color:var(--text-secondary);cursor:pointer}
+.pill:hover{color:var(--text-primary);border-color:var(--border-strong)}
+.score-dots{display:inline-flex;gap:3px;align-items:center}
+.score-dot{width:8px;height:8px;background:var(--border-strong)}
+.score-dot.filled{background:var(--accent-amber)}
+.score-circle{position:relative;width:120px;height:120px}
+.score-circle svg{width:100%;height:100%;transform:rotate(-90deg)}
+.score-circle-track{fill:none;stroke:var(--border-subtle);stroke-width:6}
+.score-circle-fill{fill:none;stroke:var(--accent-amber);stroke-width:6;stroke-linecap:butt}
+.score-circle-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-circle-value{font-family:var(--font-mono);font-size:28px;font-weight:500;color:var(--text-primary);letter-spacing:-0.02em;line-height:1}
+.score-circle-max{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);margin-top:2px}
+.score-circle-label{font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-secondary);margin-top:4px;font-weight:500;text-align:center}
+.metric{padding:14px 16px;border:1px solid var(--border-subtle);background:var(--bg-secondary)}
+.metric.flush{background:transparent;border:none;padding:0}
+.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-tertiary);font-weight:500;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.metric-value{font-family:var(--font-mono);font-size:22px;font-weight:500;color:var(--text-primary);letter-spacing:-0.02em;line-height:1.1}
+.metric-value.lg{font-size:32px}
+.metric-value.sm{font-size:16px}
+.metric-sub{font-size:11px;color:var(--text-secondary);margin-top:4px}
+.metric-band{display:flex;align-items:center;gap:8px;margin-top:8px}
+.metric-band-bar{flex:1;height:4px;background:var(--border-subtle);position:relative}
+.metric-band-fill{height:100%;background:var(--accent-amber)}
+.chart-wrap{position:relative;width:100%}
+.range-tabs{display:flex;gap:1px;background:var(--border-subtle);border:1px solid var(--border-subtle)}
+.range-tab{font-family:var(--font-mono);font-size:10px;padding:4px 9px;background:var(--bg-secondary);color:var(--text-secondary);font-weight:500}
+.range-tab:hover{color:var(--text-primary)}
+.range-tab.active{background:var(--bg-elevated);color:var(--accent-amber)}
+.legend-row{display:flex;flex-wrap:wrap;gap:16px;font-size:11px;color:var(--text-secondary);margin-top:12px}
+.legend-item{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.legend-swatch{width:12px;height:2px}
+.legend-item.muted{opacity:0.4}
+.artwork-header{display:grid;grid-template-columns:320px 1fr;gap:28px;align-items:start;padding:8px 0 28px;border-bottom:1px solid var(--border-subtle);margin-bottom:24px}
+.artwork-image{aspect-ratio:4/5;background:var(--bg-tertiary);border:1px solid var(--border-subtle);position:relative;overflow:hidden}
+.artwork-image-tag{position:absolute;bottom:8px;right:8px;font-family:var(--font-mono);font-size:10px;background:rgba(10,10,11,0.8);color:var(--text-secondary);padding:3px 6px;border:1px solid var(--border-subtle)}
+[data-theme="light"] .artwork-image-tag{background:rgba(255,255,255,0.9)}
+.artwork-meta-grid{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border-subtle);border-left:1px solid var(--border-subtle);margin-top:16px}
+.artwork-meta-cell{padding:10px 12px;border-right:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle)}
+.artwork-meta-cell .metric-label{margin-bottom:4px}
+.artwork-meta-cell .metric-val{font-size:12px;font-weight:500;color:var(--text-primary)}
+.artwork-title-block{margin-bottom:12px}
+.artwork-artist-name{font-family:var(--font-serif);font-size:32px;font-weight:600;letter-spacing:-0.02em;color:var(--text-primary);line-height:1.05}
+.artwork-title{font-family:var(--font-serif);font-size:20px;font-style:italic;font-weight:400;color:var(--text-secondary);margin-top:4px}
+.signature-metrics{display:grid;grid-template-columns:200px 1fr 1fr 1fr;border:1px solid var(--border-subtle);background:var(--bg-secondary);margin-bottom:24px}
+.sig-cell{padding:18px 20px;border-right:1px solid var(--border-subtle)}
+.sig-cell:last-child{border-right:none}
+.sig-cell.score{display:flex;align-items:center;justify-content:center}
+.sig-cell .metric-label{margin-bottom:8px}
+.story-panel{display:grid;grid-template-columns:1fr 280px;gap:28px;padding:20px;background:var(--bg-secondary);border:1px solid var(--border-subtle)}
+.story-text{font-family:var(--font-serif);font-size:14.5px;line-height:1.6;color:var(--text-primary)}
+.story-text p + p{margin-top:12px}
+.story-text em{color:var(--text-secondary);font-style:italic}
+.story-side{border-left:1px solid var(--border-subtle);padding-left:24px;font-size:11px;color:var(--text-tertiary);line-height:1.55}
+.story-side h4{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-secondary);font-weight:600;margin-bottom:8px}
+.story-side ul li{padding:3px 0}
+.story-side ul li::before{content:'\00B7  ';color:var(--text-disabled)}
+.sales-block{display:grid;grid-template-columns:380px 1fr;border:1px solid var(--border-subtle);background:var(--bg-secondary)}
+.sales-timeline{padding:16px;border-right:1px solid var(--border-subtle)}
+.sales-timeline-item{display:grid;grid-template-columns:56px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-subtle)}
+.sales-timeline-item:last-child{border-bottom:none}
+.sales-timeline-year{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);padding-top:2px}
+.sales-timeline-body{font-size:11.5px}
+.sales-timeline-venue{color:var(--text-primary);font-weight:500}
+.sales-timeline-detail{color:var(--text-tertiary);font-size:10.5px;margin-top:2px}
+.sales-timeline-price{font-family:var(--font-mono);font-weight:500;font-size:12px;margin-top:3px;color:var(--text-primary)}
+.sales-chart-wrap{padding:16px;display:flex;flex-direction:column}
+.driver-card{background:var(--bg-elevated);border:1px solid var(--border-subtle);padding:14px}
+.driver-num{font-family:var(--font-mono);font-size:10px;color:var(--accent-amber);margin-bottom:6px}
+.driver-title{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+.driver-text{font-size:11.5px;color:var(--text-secondary);line-height:1.5}
+.driver-impact{font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);margin-top:8px;padding-top:8px;border-top:1px solid var(--border-subtle)}
+.risk-block{margin-top:16px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--color-warning) 35%,transparent);background:color-mix(in srgb,var(--color-warning) 6%,transparent)}
+.risk-title{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;color:var(--color-warning);margin-bottom:6px}
+.risk-text{font-size:11.5px;color:var(--text-secondary);line-height:1.5}
+.work-cells{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border-subtle);background:var(--bg-secondary)}
+.work-cell{padding:18px 20px;border-right:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle)}
+.work-cell:nth-child(2n){border-right:none}
+.work-cell:nth-last-child(-n+2){border-bottom:none}
+.work-cell-title{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent-amber);font-weight:600;margin-bottom:8px}
+.work-cell-text{font-family:var(--font-serif);font-size:13px;line-height:1.55;color:var(--text-primary)}
+.artist-block{display:grid;grid-template-columns:280px 1fr;border:1px solid var(--border-subtle);background:var(--bg-secondary)}
+.artist-card{padding:18px;border-right:1px solid var(--border-subtle)}
+.artist-portrait{width:100%;aspect-ratio:1/1;background:var(--bg-tertiary);border:1px solid var(--border-subtle);margin-bottom:12px;overflow:hidden}
+.artist-name{font-family:var(--font-serif);font-size:22px;font-weight:600;letter-spacing:-0.01em;line-height:1.1;color:var(--text-primary)}
+.artist-bio{font-size:11.5px;color:var(--text-secondary);line-height:1.5;margin-top:10px}
+.artist-stats{padding:18px}
+.artist-stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 24px;margin-bottom:18px}
+.artist-other-works{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.other-work{border:1px solid var(--border-subtle);background:var(--bg-tertiary);cursor:pointer}
+.other-work:hover{border-color:var(--accent-amber)}
+.other-work-img{aspect-ratio:4/5;background:var(--bg-tertiary);overflow:hidden}
+.other-work-meta{padding:8px 10px;font-size:10.5px;color:var(--text-secondary)}
+.other-work-meta .row-name{color:var(--text-primary);font-weight:500;font-size:11px}
+.other-work-price{font-family:var(--font-mono);margin-top:3px;font-size:11px;color:var(--text-primary)}
+.provenance-block{display:grid;grid-template-columns:1fr 280px;border:1px solid var(--border-subtle);background:var(--bg-secondary)}
+.provenance-timeline{padding:18px;border-right:1px solid var(--border-subtle)}
+.prov-item{display:grid;grid-template-columns:56px 14px 1fr;align-items:start;gap:12px;padding:10px 0;position:relative}
+.prov-item:not(:last-child)::after{content:'';position:absolute;left:75px;top:24px;bottom:-10px;width:1px;background:var(--border-subtle)}
+.prov-year{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);padding-top:1px}
+.prov-marker{width:10px;height:10px;margin-top:5px}
+.prov-marker.museum{background:var(--accent-amber)}
+.prov-marker.foundation{background:var(--color-up)}
+.prov-marker.collector{background:var(--tag-estimated)}
+.prov-marker.gallery{background:var(--tag-observed)}
+.prov-marker.private{background:var(--text-tertiary)}
+.prov-body{font-size:11.5px}
+.prov-entity{color:var(--text-primary);font-weight:500}
+.prov-detail{color:var(--text-tertiary);font-size:10.5px;margin-top:2px}
+.provenance-side{padding:18px}
+.prov-counter{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:11px;color:var(--text-secondary);border-bottom:1px solid var(--border-subtle)}
+.prov-counter:last-of-type{border-bottom:none}
+.prov-counter .num{font-family:var(--font-mono);color:var(--text-primary);font-weight:500}
+.prov-counter-marker{width:8px;height:8px;display:inline-block;margin-right:8px;vertical-align:middle}
+.movement-block{padding:18px 20px;border:1px solid var(--border-subtle);background:var(--bg-secondary)}
+.movement-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.peer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+.peer-card{border:1px solid var(--border-subtle);padding:12px;background:var(--bg-tertiary);cursor:pointer}
+.peer-card:hover{border-color:var(--accent-amber)}
+.peer-name{font-family:var(--font-serif);font-size:14px;font-weight:600;color:var(--text-primary)}
+.peer-meta{font-size:10.5px;color:var(--text-tertiary);margin-top:2px}
+.peer-score{font-family:var(--font-mono);font-size:18px;color:var(--accent-amber);margin-top:8px;font-weight:500}
+.breakdown-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--border-subtle);background:var(--bg-secondary)}
+.breakdown-col{padding:18px 20px;border-right:1px solid var(--border-subtle)}
+.breakdown-col:last-child{border-right:none}
+.breakdown-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border-subtle)}
+.breakdown-title{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;color:var(--text-secondary)}
+.breakdown-score{font-family:var(--font-mono);font-size:22px;font-weight:500;color:var(--accent-amber)}
+.breakdown-score .max{font-size:12px;color:var(--text-tertiary)}
+.breakdown-row{display:grid;grid-template-columns:1fr 80px 50px;align-items:center;gap:10px;padding:7px 0;font-size:11.5px}
+.breakdown-row .label{color:var(--text-secondary)}
+.breakdown-row .bar{height:4px;background:var(--border-subtle);position:relative}
+.breakdown-row .bar-fill{height:100%;background:var(--accent-amber)}
+.breakdown-row .val{font-family:var(--font-mono);font-size:11px;color:var(--text-primary);text-align:right;font-weight:500}
+.breakdown-engine{font-size:10px;color:var(--text-tertiary);margin-top:14px;padding-top:10px;border-top:1px solid var(--border-subtle);font-family:var(--font-mono)}
+.rule-block{padding:12px 14px;background:var(--bg-tertiary);border:1px solid var(--border-subtle);border-left:2px solid var(--accent-amber);font-size:11.5px;color:var(--text-secondary);line-height:1.55;margin-top:14px}
+.rule-block strong{color:var(--text-primary);font-weight:500}
+.action-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:18px}
+.action-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;font-size:12px;font-weight:500;background:var(--bg-secondary);border:1px solid var(--border-strong);color:var(--text-primary);text-transform:uppercase;letter-spacing:0.06em;cursor:pointer}
+.action-btn:hover{border-color:var(--accent-amber);color:var(--accent-amber)}
+.action-btn.primary{background:var(--accent-amber);color:#0A0A0B;border-color:var(--accent-amber)}
+.action-btn.primary:hover{background:transparent;color:var(--accent-amber)}
+.action-btn svg{width:14px;height:14px;stroke-width:1.6}
+.fiche-footer{margin-top:24px;padding:16px 0;border-top:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text-tertiary);flex-wrap:wrap;gap:16px}
+.lineage-legend{display:flex;gap:16px}
+.lineage-legend .tag{padding:1px 0;border:none;background:transparent}
+.cadence-row{display:flex;gap:14px;font-family:var(--font-mono);font-size:10px}
+.fiche-links a{color:var(--text-secondary);margin-left:14px;cursor:pointer}
+.fiche-links a:hover{color:var(--accent-amber)}
+.daily-brief{padding:18px 20px}
+.daily-brief-intro{font-family:var(--font-serif);font-size:14.5px;line-height:1.55;color:var(--text-primary);margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border-subtle)}
+.brief-bullets li{display:grid;grid-template-columns:16px 1fr;gap:10px;padding:7px 0;font-size:12px;color:var(--text-secondary);line-height:1.5}
+.brief-bullets li::before{content:'\002013';color:var(--accent-amber);font-family:var(--font-mono)}
+.brief-bullets li strong{color:var(--text-primary);font-weight:500}
+.signal-row{display:grid;grid-template-columns:60px 110px 1fr 100px;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border-subtle);font-size:12px;align-items:center;cursor:pointer}
+.signal-row:hover{background:var(--bg-tertiary)}
+.signal-row:last-child{border-bottom:none}
+.signal-time{font-family:var(--font-mono);font-size:10.5px;color:var(--text-tertiary)}
+.signal-type{font-size:9.5px;text-transform:uppercase;letter-spacing:0.08em;font-weight:500;padding:2px 6px;border:1px solid var(--border-subtle);text-align:center}
+.signal-type.alert{color:var(--color-down);border-color:color-mix(in srgb,var(--color-down) 35%,transparent)}
+.signal-type.mover{color:var(--color-up);border-color:color-mix(in srgb,var(--color-up) 35%,transparent)}
+.signal-type.fair-value{color:var(--accent-amber);border-color:color-mix(in srgb,var(--accent-amber) 35%,transparent)}
+.signal-type.event{color:var(--tag-observed);border-color:color-mix(in srgb,var(--tag-observed) 35%,transparent)}
+.signal-type.watchlist{color:var(--tag-interpreted);border-color:color-mix(in srgb,var(--tag-interpreted) 35%,transparent)}
+.signal-type.confidence{color:var(--color-warning);border-color:color-mix(in srgb,var(--color-warning) 35%,transparent)}
+.signal-text{color:var(--text-primary)}
+.signal-text .muted{color:var(--text-tertiary)}
+.signal-text strong{font-weight:500}
+.signal-impact{text-align:right;font-family:var(--font-mono);font-size:11px}
+.form-row{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;padding:9px 0;font-size:12px;border-bottom:1px solid var(--border-subtle)}
+.form-row:last-child{border-bottom:none}
+.form-row label{color:var(--text-secondary);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:500}
+.form-input,.form-select{background:var(--bg-tertiary);border:1px solid var(--border-subtle);padding:6px 10px;font-size:12px;color:var(--text-primary);font-family:var(--font-mono);width:100%}
+.form-input:focus,.form-select:focus{border-color:var(--accent-amber)}
+.toggle-group{display:flex;gap:1px;background:var(--border-subtle);border:1px solid var(--border-subtle)}
+.toggle-btn{flex:1;padding:6px 12px;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;background:var(--bg-secondary);color:var(--text-secondary);font-weight:500;cursor:pointer}
+.toggle-btn.active{background:var(--bg-elevated);color:var(--accent-amber)}
+.toggle-btn:hover{color:var(--text-primary)}
+input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:var(--border-subtle);outline:none}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;background:var(--accent-amber);cursor:pointer;border:2px solid var(--bg-primary)}
+input[type="range"]::-moz-range-thumb{width:14px;height:14px;background:var(--accent-amber);cursor:pointer;border:2px solid var(--bg-primary)}
+.corr-matrix{display:grid;gap:1px;background:var(--border-subtle)}
+.corr-cell{background:var(--bg-secondary);padding:8px 10px;font-family:var(--font-mono);font-size:11px;text-align:center}
+.corr-cell.head{color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:0.05em}
+.corr-cell.row-head{color:var(--text-tertiary);font-size:10px;text-transform:uppercase;letter-spacing:0.05em;text-align:left;padding-left:8px}
+.flex{display:flex}
+.flex-center{display:flex;align-items:center;justify-content:center}
+.flex-between{display:flex;align-items:center;justify-content:space-between}
+.gap-2{gap:4px}.gap-4{gap:8px}.gap-8{gap:12px}.gap-16{gap:16px}
+.mt-4{margin-top:8px}.mt-8{margin-top:12px}.mt-16{margin-top:16px}.mt-24{margin-top:24px}
+.mb-4{margin-bottom:8px}.mb-8{margin-bottom:12px}.mb-16{margin-bottom:16px}.mb-24{margin-bottom:24px}
+.w-full{width:100%}
+.divider{width:1px;background:var(--border-subtle);align-self:stretch}
+.spacer{flex:1}
+.tabs{display:flex;border-bottom:1px solid var(--border-subtle);margin-bottom:16px}
+.tab{font-size:12px;text-transform:uppercase;letter-spacing:0.08em;padding:10px 16px;color:var(--text-secondary);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;cursor:pointer}
+.tab:hover{color:var(--text-primary)}
+.tab.active{color:var(--text-primary);border-bottom-color:var(--accent-amber)}
+.spark-line{fill:none;stroke-width:1.4}
+.spark-line.up{stroke:var(--color-up)}
+.spark-line.down{stroke:var(--color-down)}
+.spark-line.neutral{stroke:var(--text-secondary)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid var(--border-subtle);background:var(--bg-tertiary);font-size:11px}
+.filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--border-subtle);background:var(--bg-secondary);border-bottom:none}
+.filter-bar .filter-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-tertiary)}
+.inline-bar{display:inline-block;width:80px;height:4px;background:var(--border-subtle);position:relative;vertical-align:middle}
+.inline-bar-fill{position:absolute;left:0;top:0;height:100%;background:var(--accent-amber)}
+.inline-bar-fill.up{background:var(--color-up)}
+.inline-bar-fill.down{background:var(--color-down)}
+.donut-wrap{display:flex;gap:24px;align-items:center}
+.donut{width:180px;height:180px;flex-shrink:0}
+.donut-legend{flex:1;font-size:11px}
+.donut-legend-row{display:grid;grid-template-columns:10px 1fr 70px 60px;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle)}
+.donut-legend-row:last-child{border-bottom:none}
+.donut-legend-row .swatch{width:10px;height:10px}
+.donut-legend-row .lbl{color:var(--text-secondary)}
+.donut-legend-row .pct{font-family:var(--font-mono);text-align:right;color:var(--text-primary)}
+.donut-legend-row .vl{font-family:var(--font-mono);text-align:right;color:var(--text-tertiary);font-size:10px}
+.synth-painting{width:100%;height:100%;display:block}
+.research-chat{display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--border-subtle);background:var(--bg-secondary);min-height:480px}
+.chat-msg{padding:14px 18px;border-bottom:1px solid var(--border-subtle);font-size:13px;line-height:1.55}
+.chat-msg.user{background:var(--bg-tertiary)}
+.chat-msg .role{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-tertiary);font-weight:500;margin-bottom:6px}
+.chat-msg.user .role{color:var(--text-secondary)}
+.chat-msg.bart .role{color:var(--accent-amber)}
+.chat-input-row{display:flex;gap:8px;padding:14px;border-top:1px solid var(--border-subtle)}
+.chat-input-row input{flex:1;background:var(--bg-tertiary);border:1px solid var(--border-subtle);padding:8px 12px;font-size:12px;color:var(--text-primary)}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-name">B<span class="accent">A</span>RT</div>
+    <div class="brand-tag">Art Analytics Terminal</div>
+  </div>
+  <nav>
+    <div class="nav-section">
+      <div class="nav-label">Analytics</div>
+      <div class="nav-item active" data-route="home"><i data-lucide="layout-dashboard"></i>Home</div>
+      <div class="nav-item" data-route="markets"><i data-lucide="trending-up"></i>Markets</div>
+      <div class="nav-item" data-route="indices"><i data-lucide="bar-chart-3"></i>Indices<span class="nav-item-badge">5</span></div>
+      <div class="nav-item" data-route="watchlist"><i data-lucide="eye"></i>Watchlist<span class="nav-item-badge">8</span></div>
+      <div class="nav-item" data-route="portfolio"><i data-lucide="briefcase"></i>Portfolio</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Discovery</div>
+      <div class="nav-item" data-route="artwork"><i data-lucide="image"></i>Artwork</div>
+      <div class="nav-item" data-route="artist"><i data-lucide="users"></i>Artists</div>
+      <div class="nav-item" data-route="galleries"><i data-lucide="building-2"></i>Galleries</div>
+      <div class="nav-item" data-route="movements"><i data-lucide="layers"></i>Movements</div>
+      <div class="nav-item" data-route="signals"><i data-lucide="radio"></i>Signals<span class="nav-item-badge">14</span></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Research</div>
+      <div class="nav-item" data-route="trade"><i data-lucide="line-chart"></i>Trade Simulator</div>
+      <div class="nav-item" data-route="research"><i data-lucide="message-square"></i>Research</div>
+      <div class="nav-item" data-route="reports"><i data-lucide="file-text"></i>Reports</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-avatar">GP</div>
+    <div class="user-meta">
+      <div class="user-name">G. Palumbo</div>
+      <div class="user-tier">Pro Tier</div>
+    </div>
+    <button class="icon-btn" id="theme-toggle" title="Toggle theme"><i data-lucide="sun-moon"></i></button>
+    <button class="icon-btn" title="Settings"><i data-lucide="settings"></i></button>
+  </div>
+</aside>
+<header class="topbar">
+  <div class="searchbar">
+    <i data-lucide="search"></i>
+    <input type="text" placeholder="Search artists, works, galleries, indices...">
+    <span class="searchbar-kbd">/</span>
+  </div>
+  <div class="ticker-rail"><div class="ticker-track" id="ticker-track"></div></div>
+  <div class="topbar-status">
+    <span><span class="status-dot"></span>MARKET LIVE</span>
+    <span class="topbar-divider"></span>
+    <span class="mono">UPD 14m</span>
+  </div>
+  <button class="notif-btn"><i data-lucide="bell"></i><span class="notif-count">14</span></button>
+</header>
+<main class="main" id="main"></main>
+</div>
+<script>
+/* ============================================================
+   BART_DATA  — mocked data, art-world plausible
+   ============================================================ */
+const BART_DATA = {};
+function synthSeries(start, end, points, vol) {
+  const arr = [start];
+  const r = (end / start) ** (1 / (points - 1)) - 1;
+  for (let i = 1; i < points; i++) {
+    const shock = (Math.sin(i * 0.7) + Math.cos(i * 1.3) + Math.sin(i * 0.31)) * vol * 0.01;
+    arr.push(arr[i - 1] * (1 + r + shock));
+  }
+  arr[points - 1] = end;
+  return arr.map(v => +v.toFixed(2));
+}
+
+BART_DATA.indices = [
+  { id: 'blue_chip', name: 'BART BLUE CHIP', short: 'BBC', value: 358.42, change1d: -0.34, change7d: 1.21, change30d: 2.84, changeYtd: 8.42, change1y: 11.27, change5y: 47.81, vol: 14.2, volume: '$5.4B', confidence: 88, scope: '100 deceased majors post-1850', method: 'Repeat-Sales', desc: 'Artistes décédés majeurs, établis depuis plus de 30 ans. Référence trophy assets. Volatilité contenue, corrélation modérée à l\'inflation.' },
+  { id: 'modern',    name: 'BART MODERN MASTERS', short: 'BMM', value: 432.18, change1d: 0.18, change7d: 0.84, change30d: 3.41, changeYtd: 11.6, change1y: 14.8, change5y: 62.4, vol: 18.1, volume: '$3.1B', confidence: 81, scope: '120 moderns post-1945', method: 'Hedonic+Repeat', desc: 'Artistes modernes établis post-1945. Effet career stage très marqué — Hockney, Richter, Kusama portés par les rétrospectives muséales.' },
+  { id: 'ultra',     name: 'BART ULTRA-CONTEMPORARY', short: 'BUC', value: 681.45, change1d: 1.42, change7d: 4.12, change30d: 8.84, changeYtd: 24.7, change1y: 36.1, change5y: 247.3, vol: 31.4, volume: '$1.2B', confidence: 64, scope: '180 living, born > 1975', method: 'Hedonic', desc: 'Artistes vivants nés après 1975, secondaire actif depuis 2010. Le segment qui a le mieux performé sur 5 ans (+247%). Aussi le plus risqué.' },
+  { id: 'photo',     name: 'BART PHOTOGRAPHY', short: 'BPH', value: 298.71, change1d: -0.12, change7d: 0.42, change30d: 1.02, changeYtd: 4.81, change1y: 6.42, change5y: 31.8, vol: 16.3, volume: '$0.4B', confidence: 73, scope: '85 photographers 1900-now', method: 'Hedonic', desc: 'Photographie de collection. Faible corrélation aux autres indices (~0.3 vs Blue Chip). Excellent diversificateur. Düsseldorf School poids dominant.' },
+  { id: 'street',    name: 'BART STREET & URBAN', short: 'BSU', value: 478.12, change1d: 2.18, change7d: 6.41, change30d: 12.72, changeYtd: 31.4, change1y: 42.8, change5y: 184.6, vol: 32.8, volume: '$0.3B', confidence: 58, scope: '60 street artists', method: 'Repeat-Sales', desc: 'Art urbain accepté en circuit institutionnel. Porté par les jeunes UHNWIs et le segment millennials/tech entrepreneurs. Volatilité élevée.' }
+];
+BART_DATA.indices.forEach(i => {
+  const startVal = i.value / (1 + i.change5y / 100);
+  i.history5y = synthSeries(startVal, i.value, 60, i.vol / 4);
+  i.spark30d = synthSeries(i.value * 0.97, i.value, 30, i.vol / 6);
+});
+BART_DATA.indices[0].topConstituents = [
+  { artist: 'Pablo Picasso', weight: 8.4, ytd: 6.2 }, { artist: 'Andy Warhol', weight: 7.8, ytd: 9.1 },
+  { artist: 'Jean-Michel Basquiat', weight: 6.2, ytd: 14.3 }, { artist: 'Francis Bacon', weight: 5.4, ytd: 4.7 },
+  { artist: 'Cy Twombly', weight: 4.8, ytd: 8.1 }, { artist: 'Roy Lichtenstein', weight: 4.1, ytd: 6.8 },
+  { artist: 'Mark Rothko', weight: 3.9, ytd: 11.4 }, { artist: 'Alexander Calder', weight: 3.2, ytd: 7.2 },
+  { artist: 'Claude Monet', weight: 3.1, ytd: 5.4 }, { artist: 'Gustav Klimt', weight: 2.8, ytd: 13.2 }
+];
+BART_DATA.indices[1].topConstituents = [
+  { artist: 'Gerhard Richter', weight: 9.1, ytd: 13.4 }, { artist: 'David Hockney', weight: 8.4, ytd: 17.2 },
+  { artist: 'Yayoi Kusama', weight: 7.8, ytd: 22.1 }, { artist: 'Ed Ruscha', weight: 5.4, ytd: 11.8 },
+  { artist: 'Cecily Brown', weight: 4.7, ytd: 8.4 }, { artist: 'Anselm Kiefer', weight: 4.1, ytd: 6.2 },
+  { artist: 'Bridget Riley', weight: 3.8, ytd: 9.7 }, { artist: 'Alex Katz', weight: 3.4, ytd: 14.3 }
+];
+BART_DATA.indices[2].topConstituents = [
+  { artist: 'Lucy Bull', weight: 6.4, ytd: 38.1 }, { artist: 'Christina Quarles', weight: 5.8, ytd: 21.4 },
+  { artist: 'Avery Singer', weight: 5.2, ytd: 18.7 }, { artist: 'Jadé Fadojutimi', weight: 4.9, ytd: 27.3 },
+  { artist: 'Salman Toor', weight: 4.4, ytd: 24.8 }, { artist: 'Anna Weyant', weight: 4.1, ytd: -8.4 },
+  { artist: 'Amoako Boafo', weight: 3.8, ytd: 12.1 }, { artist: 'Robert Nava', weight: 3.4, ytd: 31.2 },
+  { artist: 'Loie Hollowell', weight: 3.1, ytd: 14.7 }, { artist: 'Issy Wood', weight: 2.8, ytd: -12.4 }
+];
+BART_DATA.indices[3].topConstituents = [
+  { artist: 'Andreas Gursky', weight: 11.2, ytd: 5.4 }, { artist: 'Cindy Sherman', weight: 9.4, ytd: 4.1 },
+  { artist: 'Wolfgang Tillmans', weight: 7.8, ytd: 7.2 }, { artist: 'Hiroshi Sugimoto', weight: 6.4, ytd: 3.8 },
+  { artist: 'Thomas Struth', weight: 5.2, ytd: 6.1 }, { artist: 'Candida Höfer', weight: 4.1, ytd: 4.8 }
+];
+BART_DATA.indices[4].topConstituents = [
+  { artist: 'Banksy', weight: 28.4, ytd: 24.1 }, { artist: 'KAWS', weight: 18.2, ytd: 31.4 },
+  { artist: 'Invader', weight: 8.4, ytd: 41.2 }, { artist: 'Shepard Fairey', weight: 5.4, ytd: 18.7 },
+  { artist: 'JR', weight: 4.8, ytd: 22.1 }, { artist: 'Daniel Arsham', weight: 4.1, ytd: 14.8 }
+];
+
+BART_DATA.artworks = [
+  {
+    id: 'bull-quaver-2022', artist: 'Lucy Bull', artistId: 'lucy-bull',
+    title: 'Untitled (Quaver Series)', year: 2022, medium: 'Oil on linen', dimensions: '180 x 150 cm', edition: 'Unique',
+    segment: 'Ultra-Contemporary',
+    tags: ['Painting','Female Artist','USA-based','Lyrical Abstraction','Pinault-collected','2020s','Mid-format','Oil on linen'],
+    bartScore: 84, fairValueLow: 420000, fairValueHigh: 510000, fairValueMid: 465000, fairValueRange: 9,
+    confidence: 76, confidenceLabel: 'High', liquidity: 34, liquidityLabel: 'Low',
+    timeToExit: '9-18 months', spread: '12-18%',
+    lastSale: { date: 'May 2024', price: 450000, venue: "Christie's New York", saleName: '21st Century Evening Sale', lot: 'Lot 4823', deltaEst: 18 },
+    indexBenchmark: 'ultra', fiveYReturn: 127, vsIndexBp: 1810,
+    scoreBreakdown: {
+      bart: { provenance: 22, authentication: 18, momentum: 17, validation: 14, quality: 13, total: 84,
+              max: { provenance: 25, authentication: 20, momentum: 20, validation: 20, quality: 15 } },
+      confidence: { depth: 22, recency: 22, verification: 18, observability: 14, total: 76,
+                    max: { depth: 30, recency: 25, verification: 25, observability: 20 } },
+      liquidity: { frequency: 8, sellThrough: 14, depth: 6, exit: 6, total: 34,
+                   max: { frequency: 25, sellThrough: 25, depth: 25, exit: 25 } }
+    },
+    salesHistory: [
+      { year: 2024, venue: "Christie's New York", detail: '21st Century Evening Sale, Lot 4823', price: 450000, deltaEst: 18, type: 'auction' },
+      { year: 2022, venue: 'Pinault Collection', detail: 'Private sale via Kordansky', price: 380000, type: 'private' },
+      { year: 2022, venue: 'Frieze LA, Booth Kordansky', detail: 'Acquired pre-fair', price: 220000, type: 'primary' },
+      { year: 2020, venue: 'Phillips London', detail: 'New Now, Lot 117', price: 95000, deltaEst: -12, type: 'auction' },
+      { year: 2018, venue: 'Studio sale', detail: 'First public listing', price: 18000, type: 'primary' }
+    ],
+    provenance: [
+      { year: '2018', type: 'gallery', entity: 'Studio Lucy Bull, Los Angeles', detail: 'Origin, primary market' },
+      { year: '2018', type: 'collector', entity: 'Anonymous LA collector', detail: 'Acquired studio sale, EUR 18,000' },
+      { year: '2020', type: 'private', entity: 'Anonymous European collector', detail: 'Phillips London, Lot 117' },
+      { year: '2022', type: 'gallery', entity: 'David Kordansky Gallery', detail: 'Reconsigned, Frieze LA booth' },
+      { year: '2022', type: 'foundation', entity: 'Pinault Collection', detail: 'Bourse de Commerce, Paris' },
+      { year: '2024', type: 'private', entity: 'Anonymous US institutional', detail: "Christie's NY Evening Sale buyer" }
+    ],
+    provenanceScore: 22,
+    drivers: [
+      { num: '01', title: 'Pinault Collection acquisition (2022)', text: 'Institutional signal observed across 14 comparable Bull works. Pinault presence triggers a documented +28% average price uplift on next-cycle disposal vs unsignaled comparables.', impact: '+28% avg uplift, n=14 obs' },
+      { num: '02', title: 'Whitney group show (2024)', text: 'Inclusion in Painting in Place group exhibition (Mar-Aug 2024). Across the Ultra-Contemporary segment, Whitney inclusion drives +20-40% on a 6M post-event window.', impact: '+20-40%, 6M window' },
+      { num: '03', title: 'Press momentum', text: '6 major editorial mentions across Artforum, NYT, FT Weekend, Frieze in trailing 12M. Bull-specific momentum index up +44% YoY, outperforming Ultra-Contemporary press benchmark by 1900bp.', impact: 'Press +44% YoY, 1900bp' }
+    ],
+    riskBlock: 'Liquidity Score 34/100. Resale window <12 months is likely to require an 8-15% discount given thin Ultra-Contemporary market depth. Recommended holding period >=36 months for institutional carry. Confidence Index 76 caps Fair Value tightness.',
+    workItself: {
+      series: "Part of the Quaver Series (2021-2023), the most pivotal body of work in Bull's young career. Marks her shift from purely lyrical abstraction toward orchestrated composition with rhythmic tension between marks.",
+      technique: "Oil on linen, executed in thin successive glazes rather than impasto. Bull works wet-on-wet over 4-6 weeks per piece, a process documented in her 2022 Kordansky studio interview. Surface retains a translucent, dense quality.",
+      visual: "Composition organized around a warm core (gold-amber to copper) bisected by a cooler gesture descending right-to-left. Bull cites Vuillard and Joan Mitchell as primary references, both visible here in the chromatic restraint and the orchestrated touch.",
+      conservation: "Reported condition: excellent. No restoration history. Linen support undamaged. Stored in Pinault Collection climate-controlled storage 2022-2024. Christie's pre-sale condition report available on request."
+    },
+    story: [
+      "Cette toile appartient à la <em>Quaver Series</em> que Lucy Bull a entamée fin 2021, marquant la transition de son écriture picturale vers des compositions plus orchestrées. Bull, formée à l'UCLA et révélée par sa première solo show chez David Kordansky LA en 2022, travaille la peinture comme un acte vibratoire — chaque touche fait écho à la précédente.",
+      "La critique Roberta Smith a décrit cette série dans le <em>NYT</em> comme une nervure organique qui dépasse l'abstraction lyrique de ses prédécesseurs. Présentée à Frieze LA 2022, l'œuvre a été acquise par la <em>Pinault Collection</em> avant son passage en revente actuelle.",
+      "Au sein du corpus de Bull, cette toile occupe une position transitoire : entre l'abstraction lyrique de ses débuts et les compositions plus structurées de 2024, elle constitue un pivot stylistique qui justifie la prime observée sur le marché secondaire."
+    ],
+    storySources: ['Roberta Smith, NYT (Mar 2024)', 'Artforum review (Jun 2022)', 'Frieze LA preview (Feb 2022)', 'Kordansky press release (Apr 2022)']
+  },
+  { id: 'singer-2023', artist: 'Avery Singer', artistId: 'avery-singer', title: 'Free Fall', year: 2023, medium: 'Acrylic on canvas', dimensions: '210 x 280 cm', segment: 'Ultra-Contemporary', bartScore: 88, fairValueMid: 920000, confidence: 82, liquidity: 48, lastSale: { price: 980000, venue: "Sotheby's New York" } },
+  { id: 'quarles-2022', artist: 'Christina Quarles', artistId: 'christina-quarles', title: 'Skin Toned', year: 2022, medium: 'Acrylic on canvas', dimensions: '152 x 198 cm', segment: 'Ultra-Contemporary', bartScore: 91, fairValueMid: 1450000, confidence: 84, liquidity: 52, lastSale: { price: 1380000, venue: "Christie's London" } },
+  { id: 'fadojutimi-2023', artist: 'Jadé Fadojutimi', artistId: 'jade-fadojutimi', title: 'A Vortex of Pillows', year: 2023, medium: 'Oil on canvas', dimensions: '200 x 200 cm', segment: 'Ultra-Contemporary', bartScore: 84, fairValueMid: 680000, confidence: 78, liquidity: 41, lastSale: { price: 720000, venue: "Phillips London" } },
+  { id: 'hockney-pool', artist: 'David Hockney', artistId: 'david-hockney', title: 'Portrait of an Artist (Pool with Two Figures)', year: 1972, medium: 'Acrylic on canvas', dimensions: '214 x 305 cm', segment: 'Modern Masters', bartScore: 96, fairValueMid: 92000000, confidence: 91, liquidity: 71, lastSale: { price: 90300000, venue: "Christie's NY 2018" } },
+  { id: 'richter-1024', artist: 'Gerhard Richter', artistId: 'gerhard-richter', title: 'Abstraktes Bild (1024-3)', year: 1990, medium: 'Oil on canvas', dimensions: '200 x 320 cm', segment: 'Modern Masters', bartScore: 94, fairValueMid: 21500000, confidence: 89, liquidity: 68, lastSale: { price: 22800000, venue: "Sotheby's London" } },
+  { id: 'kusama-pumpkin', artist: 'Yayoi Kusama', artistId: 'yayoi-kusama', title: 'Pumpkin (Yellow & Black)', year: 2014, medium: 'Acrylic on canvas', dimensions: '162 x 162 cm', segment: 'Modern Masters', bartScore: 91, fairValueMid: 4200000, confidence: 86, liquidity: 74, lastSale: { price: 4480000, venue: "Christie's HK" } },
+  { id: 'basquiat-1983', artist: 'Jean-Michel Basquiat', artistId: 'basquiat', title: 'In This Case', year: 1983, medium: 'Acrylic, oilstick', dimensions: '198 x 188 cm', segment: 'Blue Chip', bartScore: 94, fairValueMid: 84000000, confidence: 90, liquidity: 64, lastSale: { price: 93100000, venue: "Christie's NY 2021" } },
+  { id: 'warhol-marilyn', artist: 'Andy Warhol', artistId: 'warhol', title: 'Shot Sage Blue Marilyn', year: 1964, medium: 'Silkscreen on canvas', dimensions: '102 x 102 cm', segment: 'Blue Chip', bartScore: 97, fairValueMid: 195000000, confidence: 92, liquidity: 69, lastSale: { price: 195000000, venue: "Christie's NY 2022" } },
+  { id: 'gursky-rhein', artist: 'Andreas Gursky', artistId: 'gursky', title: 'Rhein II', year: 1999, medium: 'C-print, ed. of 6', dimensions: '186 x 364 cm', segment: 'Photography', bartScore: 92, fairValueMid: 4100000, confidence: 87, liquidity: 58, lastSale: { price: 4338500, venue: "Christie's NY 2011" } },
+  { id: 'banksy-balloon', artist: 'Banksy', artistId: 'banksy', title: 'Love is in the Bin', year: 2018, medium: 'Acrylic & oil on canvas', dimensions: '101 x 78 cm', segment: 'Street & Urban', bartScore: 89, fairValueMid: 22400000, confidence: 81, liquidity: 72, lastSale: { price: 22600000, venue: "Sotheby's London 2021" } },
+  { id: 'kaws-album', artist: 'KAWS', artistId: 'kaws', title: 'The KAWS Album', year: 2005, medium: 'Acrylic on canvas', dimensions: '101 x 101 cm', segment: 'Street & Urban', bartScore: 84, fairValueMid: 13800000, confidence: 79, liquidity: 78, lastSale: { price: 14750000, venue: "Sotheby's HK 2019" } }
+];
+BART_DATA.artworks[0].priceSeries = synthSeries(199, 450, 60, 8);
+BART_DATA.artworks[0].indexComparison = synthSeries(100, 247, 60, 4);
+
+BART_DATA.artists = [
+  { id: 'lucy-bull', name: 'Lucy Bull', born: 1990, nationality: 'American', based: 'Los Angeles, USA', segment: 'Ultra-Contemporary', bartScore: 84, galleries: ['David Kordansky', 'Almine Rech'], auctions5y: 23, sellThrough: 96, overEst: 34, dominantMedium: 'Oil on linen', bio: 'Painter trained at UCLA (MFA 2017), revealed by 2022 Kordansky LA solo show. Working primarily in oil glazes on linen, Bull builds vibratory abstract compositions with strong critical reception (NYT, Artforum). Pinault Collection acquisition (2022) marks first major institutional validation.', pressTimeline: [
+    { year: 2022, event: 'Solo show « Quaver », David Kordansky LA' },
+    { year: 2022, event: 'Pinault Collection acquisition' },
+    { year: 2023, event: 'Group show, ICA Miami' },
+    { year: 2024, event: 'Whitney « Painting in Place »' }
+  ] },
+  { id: 'avery-singer', name: 'Avery Singer', born: 1987, nationality: 'American', based: 'New York, USA', segment: 'Ultra-Contemporary', bartScore: 88, galleries: ['Hauser & Wirth'], auctions5y: 31, sellThrough: 94, overEst: 21, dominantMedium: 'Acrylic + airbrush' },
+  { id: 'christina-quarles', name: 'Christina Quarles', born: 1985, nationality: 'American', based: 'Los Angeles, USA', segment: 'Ultra-Contemporary', bartScore: 91, galleries: ['Hauser & Wirth', 'Pilar Corrias'], auctions5y: 28, sellThrough: 97, overEst: 38, dominantMedium: 'Acrylic on canvas' },
+  { id: 'jade-fadojutimi', name: 'Jadé Fadojutimi', born: 1993, nationality: 'British', based: 'London, UK', segment: 'Ultra-Contemporary', bartScore: 84, galleries: ['Gagosian', 'Pippy Houldsworth'], auctions5y: 19, sellThrough: 98, overEst: 41, dominantMedium: 'Oil on canvas' },
+  { id: 'lauren-quin', name: 'Lauren Quin', born: 1992, nationality: 'American', based: 'Los Angeles, USA', segment: 'Ultra-Contemporary', bartScore: 72, galleries: ['Blum & Poe'], auctions5y: 8, sellThrough: 88, overEst: 22, dominantMedium: 'Oil on canvas' },
+  { id: 'david-hockney', name: 'David Hockney', born: 1937, nationality: 'British', based: 'Normandy, France', segment: 'Modern Masters', bartScore: 94, galleries: ['Pace', 'L.A. Louver'], auctions5y: 187, sellThrough: 91, overEst: 14, dominantMedium: 'Acrylic on canvas' },
+  { id: 'gerhard-richter', name: 'Gerhard Richter', born: 1932, nationality: 'German', based: 'Cologne, Germany', segment: 'Modern Masters', bartScore: 96, galleries: ['David Zwirner', 'Marian Goodman'], auctions5y: 412, sellThrough: 89, overEst: 11, dominantMedium: 'Oil on canvas' },
+  { id: 'yayoi-kusama', name: 'Yayoi Kusama', born: 1929, nationality: 'Japanese', based: 'Tokyo, Japan', segment: 'Modern Masters', bartScore: 93, galleries: ['David Zwirner', 'Victoria Miro'], auctions5y: 524, sellThrough: 92, overEst: 18, dominantMedium: 'Acrylic on canvas' }
+];
+BART_DATA.artists[0].indexHistory = synthSeries(100, 412, 120, 18);
+
+BART_DATA.galleries = [
+  { id: 'hauser-wirth', name: 'Hauser & Wirth', tier: 'Mega', cities: 'Zurich · NY · LA · London · Paris · HK', roster: 86, bartScore: 96, avg5y: 42 },
+  { id: 'gagosian', name: 'Gagosian', tier: 'Mega', cities: 'NY · London · Paris · Geneva · HK · Rome', roster: 72, bartScore: 95, avg5y: 38 },
+  { id: 'zwirner', name: 'David Zwirner', tier: 'Mega', cities: 'NY · London · Paris · HK', roster: 64, bartScore: 96, avg5y: 41 },
+  { id: 'pace', name: 'Pace', tier: 'Mega', cities: 'NY · London · HK · Geneva · Tokyo', roster: 58, bartScore: 92, avg5y: 34 },
+  { id: 'kordansky', name: 'David Kordansky', tier: 'Major', cities: 'Los Angeles · New York', roster: 32, bartScore: 84, avg5y: 47 },
+  { id: 'perrotin', name: 'Perrotin', tier: 'Major', cities: 'Paris · NY · HK · Tokyo · Seoul', roster: 41, bartScore: 81, avg5y: 31 },
+  { id: 'lisson', name: 'Lisson', tier: 'Major', cities: 'London · NY · Shanghai · LA', roster: 38, bartScore: 84, avg5y: 28 },
+  { id: 'almine', name: 'Almine Rech', tier: 'Major', cities: 'Paris · Brussels · NY · Shanghai', roster: 44, bartScore: 78, avg5y: 26 }
+];
+
+BART_DATA.signals = [
+  { time: '14:32', type: 'mover', text: '<strong>Lucy Bull</strong> · Quaver Series — secondary lot adjudicated <span class="mono">EUR 450k</span> +18% est. Pinault provenance disclosed', impact: '+18.0%', impactClass: 'up', linkArtwork: 'bull-quaver-2022' },
+  { time: '13:48', type: 'fair-value', text: '<strong>Avery Singer</strong> · Fair Value revised <span class="mono">+EUR 180k</span> on Hauser & Wirth Basel disclosure', impact: '+24.6%', impactClass: 'up' },
+  { time: '12:14', type: 'event', text: '<strong>Whitney Biennial 2026</strong> shortlist leaked — 14 tracked artists incl. <span class="muted">Quarles, Toor, Boafo</span>', impact: 'Catalyst', impactClass: 'neutral' },
+  { time: '11:50', type: 'alert', text: '<strong>Anna Weyant</strong> — third unsold lot in 90 days, sell-through degraded -22pts', impact: '-22pts', impactClass: 'down' },
+  { time: '11:20', type: 'watchlist', text: '<strong>Banksy · Girl with Balloon</strong> entering Sotheby\'s Modern Evening (Nov 14)', impact: 'Watch', impactClass: 'neutral' },
+  { time: '10:42', type: 'confidence', text: '<strong>BART STREET & URBAN</strong> Confidence downgraded High to Medium, thin transactions trailing 30D', impact: '-9pts', impactClass: 'down' },
+  { time: '10:18', type: 'mover', text: '<strong>Issy Wood</strong> — Phillips evening lot withdrawn 24h pre-sale, price discovery distorted', impact: '—', impactClass: 'down' },
+  { time: '09:54', type: 'fair-value', text: '<strong>Christina Quarles</strong> · Fair Value uplift <span class="mono">+EUR 340k</span> on MoCA group show announcement', impact: '+31.5%', impactClass: 'up' },
+  { time: '09:31', type: 'event', text: '<strong>Pinault Collection</strong> dispatching 4 Boafo paintings to Bourse de Commerce Q1 2026 rotation', impact: 'Catalyst', impactClass: 'neutral' },
+  { time: '08:48', type: 'mover', text: '<strong>Jadé Fadojutimi</strong> · Phillips London adjudication <span class="mono">EUR 720k</span> +28% est.', impact: '+28.0%', impactClass: 'up' },
+  { time: '08:14', type: 'watchlist', text: '<strong>Hockney pool series 1972</strong> reported being privately consigned, NY major house', impact: 'Watch', impactClass: 'neutral' },
+  { time: '07:42', type: 'alert', text: '<strong>Salman Toor</strong> · Whitney show window closing, historical post-window decay -8% in 6M', impact: '-8% mod.', impactClass: 'down' },
+  { time: '07:18', type: 'confidence', text: '<strong>BART ULTRA-CONTEMPORARY</strong> volume backing thin (-31% vs trailing 90D avg) on lower volume Q4', impact: '-31% vol', impactClass: 'down' },
+  { time: '06:55', type: 'mover', text: '<strong>KAWS</strong> Companion sculpture, HK secondary +24% over high estimate', impact: '+24.0%', impactClass: 'up' }
+];
+
+BART_DATA.user = {
+  watchlist: [
+    { artworkId: 'bull-quaver-2022', addedPrice: 380000, currentFV: 465000, deltaFV: 22.4, bartScore: 84 },
+    { artworkId: 'singer-2023', addedPrice: 880000, currentFV: 920000, deltaFV: 4.5, bartScore: 88 },
+    { artworkId: 'quarles-2022', addedPrice: 1380000, currentFV: 1450000, deltaFV: 5.1, bartScore: 91 },
+    { artworkId: 'fadojutimi-2023', addedPrice: 540000, currentFV: 680000, deltaFV: 25.9, bartScore: 84 },
+    { artworkId: 'kusama-pumpkin', addedPrice: 4100000, currentFV: 4200000, deltaFV: 2.4, bartScore: 91 },
+    { artworkId: 'gursky-rhein', addedPrice: 4338500, currentFV: 4100000, deltaFV: -5.5, bartScore: 92 },
+    { artworkId: 'banksy-balloon', addedPrice: 22600000, currentFV: 22400000, deltaFV: -0.9, bartScore: 89 },
+    { artworkId: 'kaws-album', addedPrice: 14750000, currentFV: 13800000, deltaFV: -6.4, bartScore: 84 }
+  ],
+  portfolio: {
+    totalValue: 12480000, totalCost: 9820000, pnl: 2660000, pnlPct: 27.1,
+    holdings: [
+      { artworkId: 'bull-quaver-2022', acquired: 380000, currentFV: 465000, segment: 'Ultra-Contemporary' },
+      { artworkId: 'fadojutimi-2023', acquired: 540000, currentFV: 680000, segment: 'Ultra-Contemporary' },
+      { artworkId: 'singer-2023', acquired: 880000, currentFV: 920000, segment: 'Ultra-Contemporary' },
+      { artworkId: 'kusama-pumpkin', acquired: 4100000, currentFV: 4200000, segment: 'Modern Masters' },
+      { artworkId: 'gursky-rhein', acquired: 3800000, currentFV: 4100000, segment: 'Photography' },
+      { artworkId: 'kaws-album', acquired: 120000, currentFV: 1380000, segment: 'Street & Urban' }
+    ],
+    allocation: [
+      { segment: 'Ultra-Contemporary', value: 2065000, pct: 16.5, color: '#D4A017' },
+      { segment: 'Modern Masters', value: 4200000, pct: 33.7, color: '#6B8FB8' },
+      { segment: 'Photography', value: 4100000, pct: 32.9, color: '#8C7AAE' },
+      { segment: 'Street & Urban', value: 1380000, pct: 11.0, color: '#B8722F' },
+      { segment: 'Cash / Reserve', value: 735000, pct: 5.9, color: '#4F9D69' }
+    ]
+  }
+};
+
+BART_DATA.auctions = [
+  { date: '14 NOV', house: "Sotheby's New York", sale: 'Modern Evening Auction', lots: 47, est: '$180-270M', tracked: 12 },
+  { date: '15 NOV', house: "Christie's New York", sale: '21st Century Evening Sale', lots: 38, est: '$120-180M', tracked: 18 },
+  { date: '20 NOV', house: 'Phillips New York', sale: 'New Now', lots: 124, est: '$28-42M', tracked: 9 },
+  { date: '28 NOV', house: "Sotheby's London", sale: 'Contemporary Curated', lots: 62, est: 'GBP 14-22M', tracked: 6 },
+  { date: '04 DEC', house: "Christie's Hong Kong", sale: '20/21 Century Evening', lots: 41, est: 'HK$320-520M', tracked: 14 }
+];
+BART_DATA.recentResults = [
+  { date: '11 NOV', artwork: 'Lucy Bull · Untitled', house: "Christie's NY", est: 'EUR 350-450k', sold: 450000, delta: 18.4 },
+  { date: '11 NOV', artwork: 'Jadé Fadojutimi · Vortex', house: 'Phillips London', est: 'EUR 480-620k', sold: 720000, delta: 28.6 },
+  { date: '08 NOV', artwork: 'Cecily Brown · Studies', house: "Sotheby's NY", est: 'EUR 2.4-3.2M', sold: 3680000, delta: 14.2 },
+  { date: '07 NOV', artwork: 'Anna Weyant · Falling Woman', house: 'Phillips NY', est: 'EUR 600-800k', sold: 0, delta: 0, bought_in: true },
+  { date: '04 NOV', artwork: 'KAWS · Companion', house: "Sotheby's HK", est: 'HK$8-12M', sold: 14800000, delta: 23.3 }
+];
+BART_DATA.topMovers7d = [
+  { artist: 'Robert Nava', segment: 'Ultra-Contemporary', move: 31.2, driver: 'Pace signing', direction: 'up' },
+  { artist: 'Invader', segment: 'Street & Urban', move: 41.2, driver: 'NFT cross-buyer flow', direction: 'up' },
+  { artist: 'Christina Quarles', segment: 'Ultra-Contemporary', move: 18.4, driver: 'MoCA show', direction: 'up' },
+  { artist: 'Anna Weyant', segment: 'Ultra-Contemporary', move: -12.4, driver: 'Sell-through erosion', direction: 'down' },
+  { artist: 'Issy Wood', segment: 'Ultra-Contemporary', move: -14.8, driver: 'Phillips withdrawal', direction: 'down' },
+  { artist: 'Avery Singer', segment: 'Ultra-Contemporary', move: 14.7, driver: 'Hauser & Wirth Basel', direction: 'up' }
+];
+
+window.BART_DATA = BART_DATA;
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function fmt(n, opts = {}) {
+  if (n == null || isNaN(n)) return '—';
+  return n.toLocaleString('en-US', { maximumFractionDigits: opts.dp ?? 2, minimumFractionDigits: opts.dp ?? 0 });
+}
+function fmtEur(n, opts = {}) {
+  if (n == null || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (opts.compact || abs >= 1e6) {
+    if (abs >= 1e9) return 'EUR ' + (n / 1e9).toFixed(2) + 'B';
+    if (abs >= 1e6) return 'EUR ' + (n / 1e6).toFixed(2) + 'M';
+    if (abs >= 1e3) return 'EUR ' + (n / 1e3).toFixed(0) + 'k';
+  }
+  return 'EUR ' + fmt(n, { dp: 0 });
+}
+function fmtPct(n, opts = {}) {
+  if (n == null || isNaN(n)) return '—';
+  const sign = n > 0 ? '+' : '';
+  return sign + n.toFixed(opts.dp ?? 2) + '%';
+}
+function deltaHTML(pct, opts = {}) {
+  const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral';
+  const tri = pct > 0 ? '\u25B2' : pct < 0 ? '\u25BC' : '\u25CF';
+  return `<span class="delta ${cls}"><span class="delta-tri">${tri}</span>${fmtPct(pct, opts)}</span>`;
+}
+
+/* sparkline (mini SVG) */
+function sparkline(values, w = 80, h = 24, dir = null) {
+  if (!values || !values.length) return '';
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = max - min || 1;
+  const step = w / (values.length - 1);
+  const path = values.map((v, i) => `${i === 0 ? 'M' : 'L'}${(i * step).toFixed(2)},${(h - ((v - min) / range) * h).toFixed(2)}`).join(' ');
+  const cls = dir || (values[values.length - 1] > values[0] ? 'up' : 'down');
+  return `<svg class="index-card-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><path class="spark-line ${cls}" d="${path}"/></svg>`;
+}
+
+/* score circle SVG */
+function scoreCircle(value, max = 100, label = 'BART SCORE') {
+  const r = 52, cx = 60, cy = 60;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference - (value / max) * circumference;
+  return `<div class="score-circle">
+    <svg viewBox="0 0 120 120">
+      <circle class="score-circle-track" cx="${cx}" cy="${cy}" r="${r}"></circle>
+      <circle class="score-circle-fill" cx="${cx}" cy="${cy}" r="${r}" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+    </svg>
+    <div class="score-circle-inner">
+      <div class="score-circle-value">${value}</div>
+      <div class="score-circle-max">/ ${max}</div>
+      <div class="score-circle-label">${label}</div>
+    </div>
+  </div>`;
+}
+
+/* score dots: 10 dots, n filled = score/10 */
+function scoreDots(score, max = 100) {
+  const filled = Math.round((score / max) * 10);
+  let html = '<span class="score-dots">';
+  for (let i = 0; i < 10; i++) html += `<span class="score-dot${i < filled ? ' filled' : ''}"></span>`;
+  html += '</span>';
+  return html;
+}
+
+/* synthesize a 'painting' SVG from a seed — placeholder image without external assets */
+function synthPainting(seed = 1) {
+  let s = (seed * 31 + 7) | 0;
+  const rand = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  const palettes = [
+    ['#3a2410', '#7a3a1a', '#c47636', '#e3a052', '#f0c890', '#1a1410'],
+    ['#102338', '#1d4565', '#3a7ba8', '#7eb0d1', '#c4d8e8', '#0a1620'],
+    ['#3a1228', '#6e2545', '#a44871', '#cf78a0', '#e8a8c8', '#1a0a14'],
+    ['#1f2818', '#3e5230', '#6b8852', '#9bbc7a', '#cae0a8', '#0c1208'],
+    ['#2a1a06', '#5a3a18', '#8e6438', '#bd966a', '#e0c498', '#160d05'],
+    ['#1a1d2a', '#2c3445', '#5d6d8a', '#94a4bd', '#c4d0e0', '#0e1018']
+  ];
+  const palette = palettes[Math.abs(seed) % palettes.length];
+  const w = 400, h = 500;
+  let svg = `<svg class="synth-painting" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<rect width="${w}" height="${h}" fill="${palette[5]}"/>`;
+  for (let i = 0; i < 14; i++) {
+    const cx = rand() * w, cy = rand() * h;
+    const rx = 60 + rand() * 180, ry = 50 + rand() * 150;
+    const c = palette[Math.floor(rand() * 5)];
+    const op = 0.18 + rand() * 0.32;
+    svg += `<ellipse cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" rx="${rx.toFixed(0)}" ry="${ry.toFixed(0)}" fill="${c}" opacity="${op.toFixed(2)}"/>`;
+  }
+  for (let i = 0; i < 22; i++) {
+    const x1 = rand() * w, y1 = rand() * h;
+    const x2 = x1 + (rand() - 0.5) * 200, y2 = y1 + (rand() - 0.5) * 220;
+    const cx1 = (x1 + x2) / 2 + (rand() - 0.5) * 80, cy1 = (y1 + y2) / 2 + (rand() - 0.5) * 80;
+    const c = palette[Math.floor(rand() * 5)];
+    const sw = 1.5 + rand() * 6;
+    const op = 0.4 + rand() * 0.4;
+    svg += `<path d="M${x1.toFixed(0)},${y1.toFixed(0)} Q${cx1.toFixed(0)},${cy1.toFixed(0)} ${x2.toFixed(0)},${y2.toFixed(0)}" stroke="${c}" stroke-width="${sw.toFixed(1)}" fill="none" opacity="${op.toFixed(2)}" stroke-linecap="round"/>`;
+  }
+  svg += `</svg>`;
+  return svg;
+}
+
+function synthPortrait(seed = 1) {
+  const palettes = [['#241810','#3e2818','#62402a','#87603e'],['#181c20','#2d3942','#4f6878','#7a93a3']];
+  const p = palettes[seed % palettes.length];
+  return `<svg class="synth-painting" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <rect width="200" height="200" fill="${p[0]}"/>
+    <ellipse cx="100" cy="80" rx="40" ry="48" fill="${p[2]}"/>
+    <path d="M60,200 Q60,140 100,135 Q140,140 140,200 Z" fill="${p[1]}"/>
+    <ellipse cx="100" cy="78" rx="34" ry="42" fill="${p[3]}" opacity="0.55"/>
+  </svg>`;
+}
+
+function lineageOverlay(type = 'observed') {
+  const labelMap = { observed: '\u25C9 OBSERVED', estimated: '\u25C7 ESTIMATED', interpreted: '\u25C8 INTERPRETED' };
+  return `<div class="artwork-image-tag">${labelMap[type]}</div>`;
+}
+
+/* TICKER (topbar) */
+function renderTicker() {
+  const tracker = $('#ticker-track');
+  if (!tracker) return;
+  const items = BART_DATA.indices.map(idx => {
+    const cls = idx.change1d > 0 ? 'up' : 'down';
+    const tri = idx.change1d > 0 ? '\u25B2' : '\u25BC';
+    return `<span class="ticker-item">
+      <span class="ticker-name">${idx.short}</span>
+      <span class="ticker-value">${idx.value.toFixed(2)}</span>
+      <span class="delta ${cls}"><span class="delta-tri">${tri}</span>${fmtPct(idx.change1d)}</span>
+    </span>`;
+  }).join('');
+  tracker.innerHTML = items + items;
+}
+
+/* THEME TOGGLE */
+function setupTheme() {
+  const root = document.documentElement;
+  root.setAttribute('data-theme', 'dark');
+  const btn = $('#theme-toggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const cur = root.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    if (window._charts) {
+      Object.values(window._charts).forEach(c => { if (c && c.destroy) try { c.destroy(); } catch(e){} });
+      window._charts = {};
+    }
+    if (window.rerenderCurrentRoute) window.rerenderCurrentRoute();
+  });
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+window._charts = {};
+function destroyChart(key) {
+  if (window._charts[key]) { try { window._charts[key].destroy(); } catch(e){} delete window._charts[key]; }
+}
+
+function lineChart(canvasId, datasets, labels, opts = {}) {
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return null;
+  const c = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cssVar('--bg-elevated'),
+          titleColor: cssVar('--text-primary'),
+          bodyColor: cssVar('--text-secondary'),
+          borderColor: cssVar('--border-strong'),
+          borderWidth: 1, padding: 10, displayColors: true, boxWidth: 8, boxHeight: 2,
+          titleFont: { family: cssVar('--font-mono'), size: 10, weight: '500' },
+          bodyFont: { family: cssVar('--font-mono'), size: 11 },
+          cornerRadius: 0
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: cssVar('--border-subtle'), drawTicks: false, lineWidth: 0.5 },
+          border: { color: cssVar('--border-subtle') },
+          ticks: { color: cssVar('--text-tertiary'), font: { family: cssVar('--font-mono'), size: 9 }, maxRotation: 0, autoSkipPadding: 30 }
+        },
+        y: {
+          position: 'right',
+          grid: { color: cssVar('--border-subtle'), drawTicks: false, lineWidth: 0.5 },
+          border: { display: false },
+          ticks: { color: cssVar('--text-tertiary'), font: { family: cssVar('--font-mono'), size: 9 }, padding: 8, callback: opts.yFormatter || ((v) => v) }
+        }
+      },
+      elements: { point: { radius: 0, hoverRadius: 4 }, line: { borderWidth: 1.4, tension: 0.05 } }
+    }
+  });
+  window._charts[canvasId] = c;
+  return c;
+}
+
+function monthlyLabels(n = 60) {
+  const out = []; const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    out.push((d.getMonth() === 0) ? d.getFullYear().toString() : '');
+  }
+  return out;
+}
+
+/* DONUT (allocation) */
+function donutSVG(data, size = 180) {
+  const r = size / 2 - 8, cx = size / 2, cy = size / 2;
+  const total = data.reduce((s, d) => s + d.pct, 0);
+  let acc = 0;
+  let segs = '';
+  data.forEach(d => {
+    const start = (acc / total) * 2 * Math.PI - Math.PI / 2;
+    acc += d.pct;
+    const end = (acc / total) * 2 * Math.PI - Math.PI / 2;
+    const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
+    const x2 = cx + r * Math.cos(end), y2 = cy + r * Math.sin(end);
+    const large = (end - start) > Math.PI ? 1 : 0;
+    segs += `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${d.color}" stroke="${cssVar('--bg-secondary')}" stroke-width="2"/>`;
+  });
+  segs += `<circle cx="${cx}" cy="${cy}" r="${(r * 0.6).toFixed(2)}" fill="${cssVar('--bg-secondary')}"/>`;
+  return `<svg class="donut" viewBox="0 0 ${size} ${size}">${segs}</svg>`;
+}
+/* ============================================================
+   PAGE: HOME
+   ============================================================ */
+function renderHome() {
+  const indicesStrip = BART_DATA.indices.map(i => {
+    const dir = i.change1d > 0 ? 'up' : 'down';
+    return `<div class="index-card" data-route="indices" data-index-id="${i.id}">
+      <div class="index-card-head">
+        <div class="index-card-name">${i.short}</div>
+        <div class="caption mono">${i.method.slice(0,3).toUpperCase()}</div>
+      </div>
+      <div class="index-card-value">${i.value.toFixed(2)}</div>
+      <div class="caption">${i.name.replace('BART ', '')}</div>
+      <div class="index-card-meta">
+        ${deltaHTML(i.change1d)}
+        ${sparkline(i.spark30d, 80, 24, dir)}
+      </div>
+    </div>`;
+  }).join('');
+
+  const briefBullets = [
+    `<strong>BART ULTRA-CONTEMPORARY</strong> +<span class="mono">1.42%</span> on volume <span class="mono">$1.2B</span> backing — <em>Lucy Bull</em> Quaver lot adjudicated <span class="mono">EUR 450k</span> at Christie's NY (+18% est.)`,
+    `<strong>BART STREET & URBAN</strong> +<span class="mono">2.18%</span> driven by <em>Invader</em> Hong Kong secondary block, Confidence downgraded High to Medium on thin trailing 30D volumes`,
+    `<strong>Whitney Biennial 2026</strong> shortlist leak, 14 tracked artists incl. Quarles, Toor, Boafo. Historical inclusion driver +20-40% on 6M post-event window`,
+    `<strong>Pinault Collection</strong> dispatching 4 Boafo paintings to Bourse de Commerce Q1 2026 rotation, pre-rotation buy signal historically valid`,
+    `<strong>Anna Weyant</strong> sell-through degraded -22pts trailing 90D, third unsold lot, Ultra-Contemporary cohort downside watchlist alerted`
+  ];
+
+  const watchlistRows = BART_DATA.user.watchlist.map(w => {
+    const a = BART_DATA.artworks.find(x => x.id === w.artworkId);
+    if (!a) return '';
+    const segShort = a.segment.replace('Ultra-Contemporary', 'Ultra-C').replace('Modern Masters', 'Modern').replace('Street & Urban', 'Street');
+    return `<tr class="clickable" data-route="artwork" data-artwork-id="${a.id}">
+      <td><div class="row-icon"><div class="row-thumb">${synthPainting(a.id.length)}</div><div><div class="row-name">${a.title.slice(0, 28)}</div><div class="row-sub">${a.artist}</div></div></div></td>
+      <td class="muted">${segShort}</td>
+      <td class="num">${fmtEur(w.currentFV, { compact: true })}</td>
+      <td class="num">${deltaHTML(w.deltaFV)}</td>
+      <td class="num text-amber">${w.bartScore}</td>
+    </tr>`;
+  }).join('');
+
+  const moversRows = BART_DATA.topMovers7d.map(m => `<tr>
+    <td><div class="row-name">${m.artist}</div><div class="row-sub">${m.segment}</div></td>
+    <td class="num">${deltaHTML(m.move)}</td>
+    <td class="muted">${m.driver}</td>
+  </tr>`).join('');
+
+  const auctionRows = BART_DATA.auctions.map(a => `<tr>
+    <td class="mono text-amber" style="width:60px">${a.date}</td>
+    <td><div class="row-name">${a.house}</div><div class="row-sub">${a.sale}</div></td>
+    <td class="num muted">${a.lots}</td>
+    <td class="num">${a.est}</td>
+    <td class="num text-amber">${a.tracked}</td>
+  </tr>`).join('');
+
+  const resultsRows = BART_DATA.recentResults.map(r => {
+    const status = r.bought_in ? `<span class="text-down mono">BOUGHT IN</span>` : `<span class="mono">${fmtEur(r.sold, { compact: true })}</span>`;
+    const delta = r.bought_in ? '<span class="text-tertiary">—</span>' : deltaHTML(r.delta);
+    return `<tr>
+      <td class="mono muted" style="width:60px">${r.date}</td>
+      <td><div class="row-name">${r.artwork}</div><div class="row-sub">${r.house}</div></td>
+      <td class="num muted">${r.est}</td>
+      <td class="num">${status}</td>
+      <td class="num">${delta}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Tuesday <span class="sep">/</span> Nov 11, 2025 <span class="sep">/</span> Closing 18:00 CET</div>
+      <h1 class="h1" style="margin-top:6px">Good morning, Gabriel.</h1>
+    </div>
+    <div class="page-header-right">
+      <button class="tool-btn">Export PDF</button>
+      <button class="tool-btn">Customize</button>
+    </div>
+  </div>
+  <div class="index-strip">${indicesStrip}</div>
+  <div class="grid-2-1 mb-24">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Daily Brief</div>
+        <div class="panel-meta">Curator + Signals · 14m ago</div>
+      </div>
+      <div class="daily-brief">
+        <div class="daily-brief-intro">Le marché ouvre la semaine sur un signal de force concentré sur l'Ultra-Contemporary, porté par une vente Christie's NY exceptionnelle (Bull, Quarles) et un flux acheteur asiatique sur le Street segment. Les indices Blue Chip et Modern restent en consolidation latérale, conformément au pattern saisonnier pré-ventes du soir de novembre.</div>
+        <ul class="brief-bullets">${briefBullets.map(b => `<li>${b}</li>`).join('')}</ul>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Portfolio Snapshot</div>
+        <div class="panel-meta">Live</div>
+      </div>
+      <div class="panel-body">
+        <div class="metric flush">
+          <div class="metric-label">TOTAL VALUE</div>
+          <div class="metric-value lg">${fmtEur(BART_DATA.user.portfolio.totalValue, { compact: true })}</div>
+          <div class="metric-sub">${deltaHTML(BART_DATA.user.portfolio.pnlPct)} <span class="text-tertiary">vs cost basis</span></div>
+        </div>
+        <div class="grid-2 mt-16">
+          <div><div class="metric-label">P&amp;L PROXY</div><div class="mono" style="font-size:14px">${fmtEur(BART_DATA.user.portfolio.pnl, { compact: true })}</div></div>
+          <div><div class="metric-label">HOLDINGS</div><div class="mono" style="font-size:14px">${BART_DATA.user.portfolio.holdings.length} works</div></div>
+          <div><div class="metric-label">CONFIDENCE AVG</div><div class="mono" style="font-size:14px">82</div></div>
+          <div><div class="metric-label">LIQUIDITY AVG</div><div class="mono" style="font-size:14px">61</div></div>
+        </div>
+        <button class="tool-btn w-full mt-16" data-route="portfolio" style="display:block;text-align:center">Open Portfolio</button>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2-1 mb-24">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Watchlist Pulse</div>
+        <div class="panel-meta">8 works tracked</div>
+      </div>
+      <div class="panel-body flush">
+        <table class="dtable">
+          <thead><tr><th>Work</th><th>Segment</th><th class="num">Fair Value</th><th class="num">Delta vs Add</th><th class="num">Bart</th></tr></thead>
+          <tbody>${watchlistRows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Top Movers · 7D</div>
+        <div class="panel-meta">Cross-segment</div>
+      </div>
+      <div class="panel-body flush">
+        <table class="dtable">
+          <thead><tr><th>Artist</th><th class="num">Move</th><th>Driver</th></tr></thead>
+          <tbody>${moversRows}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="grid-1-2 mb-24">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Upcoming Auctions</div>
+        <div class="panel-meta">Next 30 days</div>
+      </div>
+      <div class="panel-body flush">
+        <table class="dtable">
+          <thead><tr><th>Date</th><th>Sale</th><th class="num">Lots</th><th class="num">Est.</th><th class="num">Tracked</th></tr></thead>
+          <tbody>${auctionRows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Latest Auction Results</div>
+        <div class="panel-meta">Last 7 days</div>
+      </div>
+      <div class="panel-body flush">
+        <table class="dtable">
+          <thead><tr><th>Date</th><th>Lot</th><th class="num">Estimate</th><th class="num">Hammer</th><th class="num">Delta</th></tr></thead>
+          <tbody>${resultsRows}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+function initHome() {
+  /* no charts on home — sparklines are inline SVG */
+}
+/* ============================================================
+   PAGE: ARTWORK (deep-dive — 12 sections)
+   ============================================================ */
+function renderArtwork(artworkId = 'bull-quaver-2022') {
+  const a = BART_DATA.artworks.find(x => x.id === artworkId) || BART_DATA.artworks[0];
+  const artist = BART_DATA.artists.find(x => x.id === a.artistId) || {};
+
+  const driversHTML = (a.drivers || []).map(d => `<div class="driver-card">
+    <div class="driver-num">${d.num} <span style="color:var(--text-tertiary)">/ Driver</span></div>
+    <div class="driver-title">${d.title}</div>
+    <div class="driver-text">${d.text}</div>
+    <div class="driver-impact">${d.impact}</div>
+  </div>`).join('');
+
+  const salesHTML = (a.salesHistory || []).map(s => {
+    const deltaStr = s.deltaEst != null ? deltaHTML(s.deltaEst) : '';
+    const typeLabel = { auction: 'Auction', private: 'Private sale', primary: 'Primary' }[s.type] || s.type;
+    return `<div class="sales-timeline-item">
+      <div class="sales-timeline-year">${s.year}</div>
+      <div class="sales-timeline-body">
+        <div class="sales-timeline-venue">${s.venue}</div>
+        <div class="sales-timeline-detail">${s.detail} · <span class="text-tertiary">${typeLabel}</span></div>
+        <div class="sales-timeline-price">${fmtEur(s.price, { compact: true })} ${deltaStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const typeLabels = { museum: 'Museum', foundation: 'Foundation', collector: 'Collector', gallery: 'Gallery', private: 'Private' };
+  const provHTML = (a.provenance || []).map(p => `<div class="prov-item">
+    <div class="prov-year">${p.year}</div>
+    <div class="prov-marker ${p.type}"></div>
+    <div class="prov-body">
+      <div class="prov-entity">${p.entity}</div>
+      <div class="prov-detail">${typeLabels[p.type]} · ${p.detail}</div>
+    </div>
+  </div>`).join('');
+
+  const counts = { museum: 0, foundation: 0, collector: 0, gallery: 0, private: 0 };
+  (a.provenance || []).forEach(p => { counts[p.type] = (counts[p.type] || 0) + 1; });
+
+  const otherWorks = BART_DATA.artworks.filter(x => x.artistId === a.artistId && x.id !== a.id);
+  const fillers = BART_DATA.artworks.filter(x => x.segment === a.segment && x.artistId !== a.artistId).slice(0, 4);
+  const works4 = otherWorks.concat(fillers).slice(0, 4);
+  const otherWorksHTML = works4.map(w => `<div class="other-work" data-route="artwork" data-artwork-id="${w.id}">
+    <div class="other-work-img">${synthPainting(w.id.length * 7)}</div>
+    <div class="other-work-meta">
+      <div class="row-name">${w.title.slice(0, 26)}${w.title.length > 26 ? '...' : ''}</div>
+      <div>${w.year} · ${w.medium.split(',')[0]}</div>
+      <div class="other-work-price">${fmtEur(w.fairValueMid, { compact: true })}</div>
+    </div>
+  </div>`).join('');
+
+  const peers = BART_DATA.artists.filter(x => x.segment === a.segment && x.id !== a.artistId).slice(0, 4);
+  const peersHTML = peers.map(p => `<div class="peer-card" data-route="artist" data-artist-id="${p.id}">
+    <div class="peer-name">${p.name}</div>
+    <div class="peer-meta">b.${p.born} · ${p.nationality}</div>
+    <div class="peer-score">${p.bartScore}<span style="font-size:11px;color:var(--text-tertiary)"> / 100</span></div>
+  </div>`).join('');
+
+  const tagsHTML = (a.tags || []).map(t => `<span class="pill">${t}</span>`).join('');
+
+  const sb = a.scoreBreakdown;
+  function brkRow(label, val, max) {
+    const pct = (val / max) * 100;
+    return `<div class="breakdown-row"><span class="label">${label}</span><span class="bar"><span class="bar-fill" style="width:${pct.toFixed(0)}%"></span></span><span class="val">${val}/${max}</span></div>`;
+  }
+  const bartBreakdown = sb && sb.bart ? `
+    ${brkRow('Provenance', sb.bart.provenance, sb.bart.max.provenance)}
+    ${brkRow('Authentication', sb.bart.authentication, sb.bart.max.authentication)}
+    ${brkRow('Market Momentum', sb.bart.momentum, sb.bart.max.momentum)}
+    ${brkRow('Institutional Validation', sb.bart.validation, sb.bart.max.validation)}
+    ${brkRow('Quality Position', sb.bart.quality, sb.bart.max.quality)}` : '';
+  const confBreakdown = sb && sb.confidence ? `
+    ${brkRow('Data Depth', sb.confidence.depth, sb.confidence.max.depth)}
+    ${brkRow('Data Recency', sb.confidence.recency, sb.confidence.max.recency)}
+    ${brkRow('Source Verification', sb.confidence.verification, sb.confidence.max.verification)}
+    ${brkRow('Market Observability', sb.confidence.observability, sb.confidence.max.observability)}` : '';
+  const liqBreakdown = sb && sb.liquidity ? `
+    ${brkRow('Transaction Frequency', sb.liquidity.frequency, sb.liquidity.max.frequency)}
+    ${brkRow('Sell-Through Rate', sb.liquidity.sellThrough, sb.liquidity.max.sellThrough)}
+    ${brkRow('Market Depth', sb.liquidity.depth, sb.liquidity.max.depth)}
+    ${brkRow('Time-to-Exit', sb.liquidity.exit, sb.liquidity.max.exit)}` : '';
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">${a.segment} <span class="sep">/</span> Painting <span class="sep">/</span> Female Artist <span class="sep">/</span> Lyrical Abstraction <span class="sep">/</span> Pinault-collected</div>
+      <div class="artwork-title-block" style="margin-top:6px">
+        <div class="artwork-artist-name">${a.artist}</div>
+        <div class="artwork-title">${a.title}, ${a.year}</div>
+      </div>
+    </div>
+    <div class="page-header-right">
+      <span class="tag observed"><span class="tag-dot"></span>Observed</span>
+      <button class="tool-btn">Export memo</button>
+      <button class="tool-btn">Compare</button>
+    </div>
+  </div>
+
+  <div class="artwork-header">
+    <div>
+      <div class="artwork-image">
+        ${synthPainting(a.id.length)}
+        ${lineageOverlay('observed')}
+      </div>
+    </div>
+    <div>
+      <div class="artwork-meta-grid">
+        <div class="artwork-meta-cell"><div class="metric-label">Year</div><div class="metric-val mono">${a.year}</div></div>
+        <div class="artwork-meta-cell"><div class="metric-label">Medium</div><div class="metric-val">${a.medium}</div></div>
+        <div class="artwork-meta-cell"><div class="metric-label">Dimensions</div><div class="metric-val mono">${a.dimensions}</div></div>
+        <div class="artwork-meta-cell"><div class="metric-label">Edition</div><div class="metric-val">${a.edition}</div></div>
+        <div class="artwork-meta-cell"><div class="metric-label">Last Sale</div><div class="metric-val mono">${fmtEur(a.lastSale.price, { compact: true })}</div></div>
+        <div class="artwork-meta-cell"><div class="metric-label">vs Estimate</div><div class="metric-val">${deltaHTML(a.lastSale.deltaEst || 0)}</div></div>
+        <div class="artwork-meta-cell"><div class="metric-label">Venue</div><div class="metric-val" style="font-size:11px">${a.lastSale.venue}</div></div>
+        <div class="artwork-meta-cell"><div class="metric-label">5Y Return</div><div class="metric-val">${deltaHTML(a.fiveYReturn)}</div></div>
+      </div>
+      <div style="margin-top:18px">
+        <div class="metric-label" style="margin-bottom:8px">FAIR VALUE RANGE</div>
+        <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+          <div class="mono" style="font-size:12px;color:var(--text-tertiary)">${fmtEur(a.fairValueLow, { compact: true })}</div>
+          <div class="mono" style="font-size:24px;color:var(--text-primary);font-weight:500">${fmtEur(a.fairValueMid, { compact: true })}</div>
+          <div class="mono" style="font-size:12px;color:var(--text-tertiary)">${fmtEur(a.fairValueHigh, { compact: true })}</div>
+          <div class="caption">+/- ${a.fairValueRange}% interval · Confidence ${a.confidence}/100</div>
+        </div>
+        <div class="metric-band-bar mt-8" style="position:relative">
+          <div class="metric-band-fill" style="width:50%;margin-left:25%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="signature-metrics">
+    <div class="sig-cell score">${scoreCircle(a.bartScore, 100, 'BART SCORE')}</div>
+    <div class="sig-cell">
+      <div class="metric-label">FAIR VALUE</div>
+      <div class="metric-value">${fmtEur(a.fairValueMid, { compact: true })}</div>
+      <div class="metric-sub">Range ${fmtEur(a.fairValueLow, { compact: true })} – ${fmtEur(a.fairValueHigh, { compact: true })}</div>
+      <div class="metric-band"><div class="metric-band-bar"><div class="metric-band-fill" style="width:50%"></div></div></div>
+    </div>
+    <div class="sig-cell">
+      <div class="metric-label">CONFIDENCE</div>
+      <div class="metric-value">${a.confidence}<span style="font-size:14px;color:var(--text-tertiary)"> / 100</span></div>
+      <div class="metric-sub">${a.confidenceLabel} · 4 pillars verified</div>
+      <div class="metric-band">${scoreDots(a.confidence)}</div>
+    </div>
+    <div class="sig-cell">
+      <div class="metric-label">LIQUIDITY</div>
+      <div class="metric-value">${a.liquidity}<span style="font-size:14px;color:var(--text-tertiary)"> / 100</span></div>
+      <div class="metric-sub">${a.liquidityLabel} · Exit ${a.timeToExit}</div>
+      <div class="metric-band">${scoreDots(a.liquidity)}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="h2">The Story</div>
+        <span class="tag interpreted"><span class="tag-dot"></span>Interpreted</span>
+      </div>
+      <div class="section-tools"><span class="caption mono">Curator Engine · refreshed weekly</span></div>
+    </div>
+    <div class="story-panel">
+      <div class="story-text">${(a.story || []).map(p => `<p>${p}</p>`).join('')}</div>
+      <aside class="story-side">
+        <h4>Sources cited</h4>
+        <ul>${(a.storySources || []).map(s => `<li>${s}</li>`).join('')}</ul>
+        <h4 style="margin-top:16px">Engine cadence</h4>
+        <div>Curator Engine · weekly<br>Last refresh: 6 days ago<br>Next refresh: ~24h</div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="h2">Sales History &amp; Appreciation</div>
+        <span class="caption">${(a.salesHistory || []).length} transactions · 6Y window</span>
+      </div>
+      <div class="section-tools">
+        <div class="range-tabs"><button class="range-tab">3Y</button><button class="range-tab active">5Y</button><button class="range-tab">ALL</button></div>
+      </div>
+    </div>
+    <div class="sales-block">
+      <div class="sales-timeline">${salesHTML}</div>
+      <div class="sales-chart-wrap">
+        <div class="flex-between mb-8">
+          <div class="caption">Indexed price (base 100) vs <span class="text-amber">BART ULTRA-CONTEMPORARY</span></div>
+          <div class="caption mono">+${a.fiveYReturn}% / +${a.vsIndexBp}bp vs index</div>
+        </div>
+        <div style="position:relative;height:240px"><canvas id="artwork-chart"></canvas></div>
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--accent-amber)"></span>${a.title}</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--text-secondary)"></span>BART ULTRA-CONTEMPORARY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="h2">Why this work has appreciated +${a.fiveYReturn}% since 2018</div>
+        <span class="caption mono text-up">Outperforming Ultra-Contemporary Index by ${a.vsIndexBp}bp</span>
+      </div>
+      <div class="section-tools"><span class="caption mono">Signals Engine · refreshed nightly</span></div>
+    </div>
+    <div class="grid-3">${driversHTML}</div>
+    <div class="risk-block">
+      <div class="risk-title">Downside Risk</div>
+      <div class="risk-text">${a.riskBlock}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="h2">The Work Itself</div>
+        <span class="tag observed"><span class="tag-dot"></span>Observed</span>
+        <span class="tag interpreted"><span class="tag-dot"></span>Interpreted</span>
+      </div>
+      <div class="section-tools"><span class="caption">Curator notes · Conservation report verified</span></div>
+    </div>
+    <div class="work-cells">
+      <div class="work-cell"><div class="work-cell-title">Series &amp; Period</div><div class="work-cell-text">${a.workItself.series}</div></div>
+      <div class="work-cell"><div class="work-cell-title">Technique</div><div class="work-cell-text">${a.workItself.technique}</div></div>
+      <div class="work-cell"><div class="work-cell-title">Visual Reading</div><div class="work-cell-text">${a.workItself.visual}</div></div>
+      <div class="work-cell"><div class="work-cell-title">Conservation</div><div class="work-cell-text">${a.workItself.conservation}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="h2">The Artist</div>
+        <span class="caption">Bart Score Artist · ${artist.bartScore || a.bartScore} / 100</span>
+      </div>
+      <div class="section-tools"><a class="tool-btn" data-route="artist" data-artist-id="${a.artistId}">View artist page</a></div>
+    </div>
+    <div class="artist-block">
+      <div class="artist-card">
+        <div class="artist-portrait">${synthPortrait(7)}</div>
+        <div class="artist-name">${artist.name || a.artist}</div>
+        <div class="caption mt-4">b. ${artist.born || '1990'} · ${artist.nationality || 'American'} · ${artist.based || 'Los Angeles, USA'}</div>
+        <div class="artist-bio">${artist.bio || ''}</div>
+        <div class="mt-16"><span class="caption">REPRESENTED BY</span><div class="mono mt-4" style="font-size:11px">${(artist.galleries || []).join(' · ')}</div></div>
+      </div>
+      <div class="artist-stats">
+        <div class="artist-stats-grid">
+          <div><div class="metric-label">Auctions 5Y</div><div class="mono" style="font-size:18px">${artist.auctions5y || 23}</div></div>
+          <div><div class="metric-label">Sell-Through</div><div class="mono" style="font-size:18px">${artist.sellThrough || 96}<span style="font-size:11px;color:var(--text-tertiary)">%</span></div></div>
+          <div><div class="metric-label">Avg over Estimate</div><div class="mono" style="font-size:18px">+${artist.overEst || 34}<span style="font-size:11px;color:var(--text-tertiary)">%</span></div></div>
+          <div><div class="metric-label">Dominant Medium</div><div style="font-size:13px;padding-top:4px">${artist.dominantMedium || 'Oil on linen'}</div></div>
+        </div>
+        <div class="caption mb-8" style="text-transform:uppercase;letter-spacing:0.08em;font-weight:500;color:var(--text-secondary)">Other works tracked</div>
+        <div class="artist-other-works">${otherWorksHTML}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="h2">Provenance &amp; Ownership Trail</div>
+        <span class="tag observed"><span class="tag-dot"></span>Observed</span>
+        <span class="tag estimated"><span class="tag-dot"></span>Estimated</span>
+      </div>
+      <div class="section-tools"><span class="caption mono">Provenance Score ${a.provenanceScore} / 25</span></div>
+    </div>
+    <div class="provenance-block">
+      <div class="provenance-timeline">${provHTML}</div>
+      <div class="provenance-side">
+        <div class="caption" style="text-transform:uppercase;letter-spacing:0.08em;font-weight:500;color:var(--text-secondary);margin-bottom:8px">OWNERSHIP PROFILE</div>
+        <div class="prov-counter"><span><span class="prov-counter-marker" style="background:var(--accent-amber)"></span>Museum</span><span class="num">${counts.museum || 0}</span></div>
+        <div class="prov-counter"><span><span class="prov-counter-marker" style="background:var(--color-up)"></span>Foundation</span><span class="num">${counts.foundation || 0}</span></div>
+        <div class="prov-counter"><span><span class="prov-counter-marker" style="background:var(--tag-estimated)"></span>Notable Collector</span><span class="num">${counts.collector || 0}</span></div>
+        <div class="prov-counter"><span><span class="prov-counter-marker" style="background:var(--tag-observed)"></span>Top-tier Gallery</span><span class="num">${counts.gallery || 0}</span></div>
+        <div class="prov-counter"><span><span class="prov-counter-marker" style="background:var(--text-tertiary)"></span>Anonymous</span><span class="num">${counts.private || 0}</span></div>
+        <div class="rule-block" style="margin-top:14px;font-size:11px"><strong>Note.</strong> Pinault acquisition adds +8 pts to Provenance pillar. Absence from public museum collection caps score at 22 — could rise to 25 if rumored Whitney 2026 acquisition materializes.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="h2">Movement &amp; Context</div>
+        <span class="caption">Lyrical Abstraction Post-2018</span>
+      </div>
+      <div class="section-tools"><span class="caption mono">+38% vs Ultra-Contemporary Index 5Y</span></div>
+    </div>
+    <div class="movement-block">
+      <div style="font-family:var(--font-serif);font-size:14.5px;line-height:1.55;color:var(--text-primary)">
+        Mouvement émergent regroupant des peintres américains et britanniques nés après 1980 qui revisitent l'abstraction lyrique des années 1950 (Joan Mitchell, Helen Frankenthaler) avec un vocabulaire contemporain. Caractéristiques distinctives : compositions orchestrées plutôt que gestuelles pures, palettes saturées, formats moyens à grands. Le sous-segment a capté l'attention des collections institutionnelles à partir de 2021 (Pinault, Rubell, Hammer), portant les prix +38% vs l'indice Ultra-Contemporary global sur 5 ans.
+      </div>
+      <div style="margin-top:18px">
+        <div class="caption" style="text-transform:uppercase;letter-spacing:0.08em;font-weight:500;color:var(--text-secondary);margin-bottom:6px">Comparable Artists</div>
+        <div class="peer-grid">${peersHTML}</div>
+      </div>
+      <div style="margin-top:18px">
+        <div class="caption" style="text-transform:uppercase;letter-spacing:0.08em;font-weight:500;color:var(--text-secondary);margin-bottom:6px">Cross-cutting tags</div>
+        <div class="movement-tags">${tagsHTML}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="h2">Bart Metrics Breakdown</div>
+        <span class="caption">3 metrics · 13 pillars · never aggregated</span>
+      </div>
+      <div class="section-tools"><span class="caption mono">Refreshed nightly</span></div>
+    </div>
+    <div class="breakdown-grid">
+      <div class="breakdown-col">
+        <div class="breakdown-head">
+          <div class="breakdown-title">Bart Score</div>
+          <div class="breakdown-score">${sb.bart.total}<span class="max"> / 100</span></div>
+        </div>
+        ${bartBreakdown}
+        <div class="breakdown-engine">Scoring Engine · refreshed nightly</div>
+      </div>
+      <div class="breakdown-col">
+        <div class="breakdown-head">
+          <div class="breakdown-title">Confidence Index</div>
+          <div class="breakdown-score">${sb.confidence.total}<span class="max"> / 100</span></div>
+        </div>
+        ${confBreakdown}
+        <div class="breakdown-engine">Confidence Engine · refreshed nightly</div>
+      </div>
+      <div class="breakdown-col">
+        <div class="breakdown-head">
+          <div class="breakdown-title">Liquidity Score</div>
+          <div class="breakdown-score">${sb.liquidity.total}<span class="max"> / 100</span></div>
+        </div>
+        ${liqBreakdown}
+        <div class="breakdown-engine">Liquidity Engine · weekly recalibration</div>
+      </div>
+    </div>
+    <div class="rule-block">
+      <strong>Bart's Rule.</strong> The 3 metrics never aggregate into a single score. Read in quadrants: <strong>High Bart + High Confidence + Low Liquidity</strong> = strong asset hard to sell. <strong>High Bart + Low Confidence</strong> = speculative upside. Always pair Bart Score with both its Confidence and Liquidity readouts.
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="action-btn"><i data-lucide="eye"></i>Add to Watchlist</button>
+    <button class="action-btn"><i data-lucide="bell-plus"></i>Create Alert</button>
+    <button class="action-btn"><i data-lucide="briefcase"></i>Add to Portfolio</button>
+    <button class="action-btn primary"><i data-lucide="sparkles"></i>Ask Bart</button>
+  </div>
+
+  <div class="fiche-footer">
+    <div class="lineage-legend">
+      <span class="tag observed"><span class="tag-dot"></span>Observed</span>
+      <span class="tag estimated"><span class="tag-dot"></span>Estimated</span>
+      <span class="tag interpreted"><span class="tag-dot"></span>Interpreted</span>
+    </div>
+    <div class="cadence-row">
+      <span>Coverage 2h ago</span><span>·</span>
+      <span>Pricing 14m ago</span><span>·</span>
+      <span>Signals 24m ago</span><span>·</span>
+      <span>Curator 6d ago</span>
+    </div>
+    <div class="fiche-links"><a>Methodology</a><a>API</a><a>Coverage</a><a>Compliance</a></div>
+  </div>
+  `;
+}
+
+function initArtwork() {
+  const a = BART_DATA.artworks[0]; // current default
+  if (!document.getElementById('artwork-chart')) return;
+  const labels = monthlyLabels(60);
+  // Rebase artwork series so it starts at 100
+  const ps = a.priceSeries; const base = ps[0];
+  const artworkRebased = ps.map(v => +(v / base * 100).toFixed(2));
+  lineChart('artwork-chart', [
+    { label: a.title, data: artworkRebased, borderColor: cssVar('--accent-amber'), backgroundColor: 'transparent', tension: 0.05 },
+    { label: 'BART ULTRA-CONTEMPORARY', data: a.indexComparison, borderColor: cssVar('--text-secondary'), borderDash: [3, 3], backgroundColor: 'transparent', tension: 0.05 }
+  ], labels);
+}
+/* ============================================================
+   PAGE: MARKETS / INDICES DRILL-DOWN
+   ============================================================ */
+let _currentIndexId = 'ultra';
+
+function renderMarkets(indexId) {
+  if (indexId) _currentIndexId = indexId;
+  const i = BART_DATA.indices.find(x => x.id === _currentIndexId) || BART_DATA.indices[2];
+  const tabs = BART_DATA.indices.map(x => `<button class="tab${x.id === i.id ? ' active' : ''}" data-index-tab="${x.id}">${x.short} · ${x.name.replace('BART ', '')}</button>`).join('');
+
+  const consts = (i.topConstituents || []).map((c, idx) => `<tr>
+    <td class="num muted">${idx + 1}</td>
+    <td><div class="row-name">${c.artist}</div></td>
+    <td class="num">${c.weight.toFixed(1)}%</td>
+    <td class="num"><span class="inline-bar"><span class="inline-bar-fill ${c.ytd > 0 ? 'up' : 'down'}" style="width:${Math.min(Math.abs(c.ytd) * 2, 100).toFixed(0)}%"></span></span></td>
+    <td class="num">${deltaHTML(c.ytd)}</td>
+  </tr>`).join('');
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Markets <span class="sep">/</span> Indices <span class="sep">/</span> Drill-down</div>
+      <h1 class="h1" style="margin-top:6px">${i.name}</h1>
+      <div class="caption mt-4">${i.scope} · Method: ${i.method} · Volume backing ${i.volume}</div>
+    </div>
+    <div class="page-header-right">
+      <button class="tool-btn">Compare</button>
+      <button class="tool-btn">Methodology</button>
+      <button class="tool-btn">Export</button>
+    </div>
+  </div>
+  <div class="tabs">${tabs}</div>
+  <div class="signature-metrics">
+    <div class="sig-cell"><div class="metric-label">CURRENT VALUE</div><div class="metric-value">${i.value.toFixed(2)}</div><div class="metric-sub">${deltaHTML(i.change1d)} 1D</div></div>
+    <div class="sig-cell"><div class="metric-label">YTD</div><div class="metric-value">${deltaHTML(i.changeYtd)}</div><div class="metric-sub">${deltaHTML(i.change1y)} 1Y · ${deltaHTML(i.change5y)} 5Y</div></div>
+    <div class="sig-cell"><div class="metric-label">VOLATILITY (12M)</div><div class="metric-value mono">${i.vol.toFixed(1)}%</div><div class="metric-sub">Annualized rolling</div></div>
+    <div class="sig-cell"><div class="metric-label">CONFIDENCE</div><div class="metric-value">${i.confidence}<span style="font-size:14px;color:var(--text-tertiary)"> / 100</span></div><div class="metric-band">${scoreDots(i.confidence)}</div></div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <div class="section-header-left"><div class="h2">Index Performance · 5Y</div><span class="caption">Base 100 = Jan 2020</span></div>
+      <div class="section-tools">
+        <div class="range-tabs"><button class="range-tab">1Y</button><button class="range-tab">3Y</button><button class="range-tab active">5Y</button><button class="range-tab">10Y</button></div>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-body">
+      <div style="position:relative;height:340px"><canvas id="index-chart"></canvas></div>
+      <div class="legend-row">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--accent-amber)"></span>${i.short}</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--tag-observed)"></span>S&amp;P 500</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--color-warning)"></span>Gold</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--tag-interpreted)"></span>Bitcoin</span>
+      </div>
+    </div></div>
+  </div>
+  <div class="grid-2 mb-24">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Methodology Breakdown</div><div class="panel-meta">Two-method convergence</div></div>
+      <div class="panel-body">
+        <div class="grid-2">
+          <div><div class="metric-label">Repeat-Sales</div><div class="mono" style="font-size:18px">${i.value.toFixed(2)}</div><div class="caption mt-4">Case-Shiller-like, on revente pairs</div></div>
+          <div><div class="metric-label">Hedonic</div><div class="mono" style="font-size:18px">${(i.value * 0.992).toFixed(2)}</div><div class="caption mt-4">Renneboog-Spaenjers regression</div></div>
+        </div>
+        <div style="margin-top:14px;padding:10px 12px;background:var(--bg-tertiary);border-left:2px solid var(--color-up);font-size:11.5px;color:var(--text-secondary)">
+          <strong style="color:var(--text-primary)">Convergence: 99.2%</strong> — methods agree within 80bp. Signal robust.
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Volume Backing &amp; Confidence</div><div class="panel-meta">Trailing 90D</div></div>
+      <div class="panel-body">
+        <div class="grid-2">
+          <div><div class="metric-label">Transactions</div><div class="mono" style="font-size:18px">${(180 + Math.floor(Math.random()*40)).toFixed(0)}</div><div class="caption mt-4">in last 90D</div></div>
+          <div><div class="metric-label">Volume Total</div><div class="mono" style="font-size:18px">${i.volume}</div><div class="caption mt-4">trailing 12M</div></div>
+        </div>
+        <div class="mt-16">
+          <div class="metric-label">CONFIDENCE OF THE INDEX</div>
+          <div class="metric-band mt-4">
+            <div style="font-family:var(--font-mono);font-size:18px">${i.confidence}/100</div>
+            <div class="metric-band-bar"><div class="metric-band-fill" style="width:${i.confidence}%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2-1 mb-24">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Top Constituents</div><div class="panel-meta">By weight · YTD performance</div></div>
+      <div class="panel-body flush">
+        <table class="dtable">
+          <thead><tr><th class="num">#</th><th>Artist</th><th class="num">Weight</th><th class="num">YTD</th><th class="num">YTD %</th></tr></thead>
+          <tbody>${consts}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Description</div><div class="panel-meta">Index profile</div></div>
+      <div class="panel-body"><div style="font-size:12px;color:var(--text-secondary);line-height:1.55">${i.desc}</div></div>
+    </div>
+  </div>
+  `;
+}
+
+function initMarkets() {
+  const i = BART_DATA.indices.find(x => x.id === _currentIndexId) || BART_DATA.indices[2];
+  if (!document.getElementById('index-chart')) return;
+  const labels = monthlyLabels(60);
+  const base = i.history5y[0];
+  const idxRebased = i.history5y.map(v => +(v / base * 100).toFixed(2));
+  const sp500 = synthSeries(100, 178, 60, 8);
+  const gold = synthSeries(100, 145, 60, 6);
+  const btc = synthSeries(100, 320, 60, 25);
+  lineChart('index-chart', [
+    { label: i.short, data: idxRebased, borderColor: cssVar('--accent-amber'), backgroundColor: 'transparent', borderWidth: 1.6 },
+    { label: 'S&P 500', data: sp500, borderColor: cssVar('--tag-observed'), backgroundColor: 'transparent', borderDash: [3,3] },
+    { label: 'Gold', data: gold, borderColor: cssVar('--color-warning'), backgroundColor: 'transparent', borderDash: [3,3] },
+    { label: 'BTC', data: btc, borderColor: cssVar('--tag-interpreted'), backgroundColor: 'transparent', borderDash: [3,3] }
+  ], labels);
+}
+
+/* ============================================================
+   PAGE: ARTIST
+   ============================================================ */
+function renderArtist(artistId = 'lucy-bull') {
+  const a = BART_DATA.artists.find(x => x.id === artistId) || BART_DATA.artists[0];
+  const works = BART_DATA.artworks.filter(x => x.artistId === a.id);
+  const press = (a.pressTimeline || []).map(p => `<div class="prov-item">
+    <div class="prov-year">${p.year}</div>
+    <div class="prov-marker museum"></div>
+    <div class="prov-body"><div class="prov-entity">${p.event}</div></div>
+  </div>`).join('');
+
+  const worksHTML = works.length ? works.map(w => `<div class="other-work" data-route="artwork" data-artwork-id="${w.id}">
+    <div class="other-work-img">${synthPainting(w.id.length * 5)}</div>
+    <div class="other-work-meta"><div class="row-name">${w.title.slice(0,28)}</div><div>${w.year}</div><div class="other-work-price">${fmtEur(w.fairValueMid, { compact: true })}</div></div>
+  </div>`).join('') : '<div class="caption">No tracked works yet.</div>';
+
+  const peers = BART_DATA.artists.filter(x => x.segment === a.segment && x.id !== a.id).slice(0, 4);
+  const peersHTML = peers.map(p => `<div class="peer-card" data-route="artist" data-artist-id="${p.id}">
+    <div class="peer-name">${p.name}</div>
+    <div class="peer-meta">b.${p.born} · ${p.nationality}</div>
+    <div class="peer-score">${p.bartScore}<span style="font-size:11px;color:var(--text-tertiary)"> / 100</span></div>
+  </div>`).join('');
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Artists <span class="sep">/</span> ${a.segment} <span class="sep">/</span> ${a.nationality}</div>
+      <h1 class="h1 serif" style="margin-top:6px">${a.name}</h1>
+      <div class="caption mt-4">b. ${a.born} · ${a.nationality} · ${a.based}</div>
+    </div>
+    <div class="page-header-right">
+      <button class="tool-btn">Watchlist</button>
+      <button class="tool-btn">Export memo</button>
+    </div>
+  </div>
+  <div class="signature-metrics">
+    <div class="sig-cell score">${scoreCircle(a.bartScore, 100, 'BART SCORE ARTIST')}</div>
+    <div class="sig-cell"><div class="metric-label">AUCTIONS 5Y</div><div class="metric-value">${a.auctions5y}</div><div class="metric-sub">lots adjudicated</div></div>
+    <div class="sig-cell"><div class="metric-label">SELL-THROUGH</div><div class="metric-value">${a.sellThrough}<span style="font-size:14px;color:var(--text-tertiary)">%</span></div><div class="metric-sub">vs ${(a.sellThrough - 18)}% segment avg</div></div>
+    <div class="sig-cell"><div class="metric-label">AVG OVER ESTIMATE</div><div class="metric-value">+${a.overEst}<span style="font-size:14px;color:var(--text-tertiary)">%</span></div><div class="metric-sub">trailing 12M</div></div>
+  </div>
+  <div class="grid-2-1 mb-24">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Artist Index · 10Y</div><div class="panel-meta">Personal repeat-sales · base 100 Jan 2015</div></div>
+      <div class="panel-body"><div style="position:relative;height:280px"><canvas id="artist-chart"></canvas></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Biography</div></div>
+      <div class="panel-body">
+        <div style="font-family:var(--font-serif);font-size:13.5px;line-height:1.55;color:var(--text-primary)">${a.bio || ''}</div>
+        <div class="mt-16"><div class="metric-label">REPRESENTED BY</div><div class="mono mt-4" style="font-size:11px">${(a.galleries || []).join(' · ')}</div></div>
+        <div class="mt-16"><div class="metric-label">DOMINANT MEDIUM</div><div style="font-size:12px;margin-top:4px">${a.dominantMedium || ''}</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2-1 mb-24">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Tracked Corpus</div><div class="panel-meta">${works.length} works</div></div>
+      <div class="panel-body"><div class="artist-other-works">${worksHTML}</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Press &amp; Institutional Timeline</div></div>
+      <div class="panel-body" style="padding:8px 18px">${press}</div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header"><div class="section-header-left"><div class="h2">Comparable Artists</div></div></div>
+    <div class="peer-grid">${peersHTML}</div>
+  </div>
+  `;
+}
+
+function initArtist() {
+  if (!document.getElementById('artist-chart')) return;
+  const a = BART_DATA.artists[0];
+  const series = a.indexHistory || synthSeries(100, 412, 120, 18);
+  const labels = monthlyLabels(120).map((l,idx) => idx % 12 === 0 ? l : '');
+  lineChart('artist-chart', [
+    { label: a.name, data: series, borderColor: cssVar('--accent-amber'), backgroundColor: 'transparent' }
+  ], labels);
+}
+/* ============================================================
+   PAGE: TRADE SIMULATOR
+   ============================================================ */
+function renderTrade() {
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Research <span class="sep">/</span> Backtest</div>
+      <h1 class="h1" style="margin-top:6px">Trade Simulator</h1>
+      <div class="caption mt-4">Simulate cross-segment positions vs equity, bond, commodity benchmarks</div>
+    </div>
+    <div class="page-header-right">
+      <button class="tool-btn">Save scenario</button>
+      <button class="tool-btn active">Run backtest</button>
+    </div>
+  </div>
+  <div class="grid-3-2 mb-24">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Portfolio Backtest · 5Y</div><div class="panel-meta">Long Ultra-C · Short Street &amp; Urban</div></div>
+      <div class="panel-body">
+        <div style="position:relative;height:340px"><canvas id="trade-chart"></canvas></div>
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--accent-amber)"></span>Simulated portfolio</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--tag-observed)"></span>S&amp;P 500</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--color-warning)"></span>Gold</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--tag-interpreted)"></span>BTC</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="panel mb-16">
+        <div class="panel-head"><div class="panel-title">Position Configurator</div><div class="panel-meta">Edit to re-run</div></div>
+        <div class="panel-body" style="padding:8px 14px">
+          <div class="form-row"><label>Direction</label><div class="toggle-group"><button class="toggle-btn active">LONG</button><button class="toggle-btn">SHORT</button></div></div>
+          <div class="form-row"><label>Segment</label><select class="form-select"><option>BART ULTRA-CONTEMPORARY</option><option>BART BLUE CHIP</option><option>BART MODERN MASTERS</option><option>BART PHOTOGRAPHY</option><option>BART STREET &amp; URBAN</option></select></div>
+          <div class="form-row"><label>Allocation</label><input class="form-input" value="100%"></div>
+          <div class="form-row"><label>Period</label><input class="form-input" value="2020-11 to 2025-11"></div>
+          <div class="form-row"><label>Capital</label><input class="form-input" value="EUR 1,000,000"></div>
+          <div class="form-row"><label>Rebalance</label><div class="toggle-group"><button class="toggle-btn active">Quarterly</button><button class="toggle-btn">Yearly</button></div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Performance Metrics</div></div>
+        <div class="panel-body" style="padding:8px 14px">
+          <div class="form-row"><label>Total Return</label><span class="mono text-up">+247.3%</span></div>
+          <div class="form-row"><label>CAGR</label><span class="mono text-up">+28.4%</span></div>
+          <div class="form-row"><label>Volatility</label><span class="mono">31.4%</span></div>
+          <div class="form-row"><label>Sharpe</label><span class="mono">0.82</span></div>
+          <div class="form-row"><label>Max Drawdown</label><span class="mono text-down">-22.7%</span></div>
+          <div class="form-row"><label>Calmar</label><span class="mono">1.25</span></div>
+          <div class="form-row"><label>Vs S&amp;P 500</label><span class="mono text-up">+1690bp</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2 mb-24">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Correlation Matrix</div><div class="panel-meta">Trailing 5Y · monthly returns</div></div>
+      <div class="panel-body">
+        <div class="corr-matrix" style="grid-template-columns:80px repeat(5,1fr)">
+          <div class="corr-cell head"></div>
+          <div class="corr-cell head">BUC</div><div class="corr-cell head">BBC</div><div class="corr-cell head">SPX</div><div class="corr-cell head">GLD</div><div class="corr-cell head">BTC</div>
+          <div class="corr-cell row-head">BUC</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 60%,transparent);color:#0A0A0B">1.00</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 18%,transparent)">0.42</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 8%,transparent)">0.21</div><div class="corr-cell">0.04</div><div class="corr-cell" style="background:color-mix(in srgb,var(--color-down) 12%,transparent)">-0.18</div>
+          <div class="corr-cell row-head">BBC</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 18%,transparent)">0.42</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 60%,transparent);color:#0A0A0B">1.00</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 14%,transparent)">0.34</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 10%,transparent)">0.27</div><div class="corr-cell">0.08</div>
+          <div class="corr-cell row-head">SPX</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 8%,transparent)">0.21</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 14%,transparent)">0.34</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 60%,transparent);color:#0A0A0B">1.00</div><div class="corr-cell" style="background:color-mix(in srgb,var(--color-down) 8%,transparent)">-0.12</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 22%,transparent)">0.51</div>
+          <div class="corr-cell row-head">GLD</div><div class="corr-cell">0.04</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 10%,transparent)">0.27</div><div class="corr-cell" style="background:color-mix(in srgb,var(--color-down) 8%,transparent)">-0.12</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 60%,transparent);color:#0A0A0B">1.00</div><div class="corr-cell">0.06</div>
+          <div class="corr-cell row-head">BTC</div><div class="corr-cell" style="background:color-mix(in srgb,var(--color-down) 12%,transparent)">-0.18</div><div class="corr-cell">0.08</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 22%,transparent)">0.51</div><div class="corr-cell">0.06</div><div class="corr-cell" style="background:color-mix(in srgb,var(--accent-amber) 60%,transparent);color:#0A0A0B">1.00</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Simulated Trades</div><div class="panel-meta">Quarterly rebalance · 10 visible</div></div>
+      <div class="panel-body flush">
+        <table class="dtable">
+          <thead><tr><th>Entry</th><th>Exit</th><th class="num">Capital</th><th class="num">P&amp;L</th><th class="num">Hold</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">2020-11</td><td class="mono">2021-02</td><td class="num">EUR 1.00M</td><td class="num">${deltaHTML(8.4)}</td><td class="num muted">3M</td></tr>
+            <tr><td class="mono">2021-02</td><td class="mono">2021-05</td><td class="num">EUR 1.08M</td><td class="num">${deltaHTML(14.2)}</td><td class="num muted">3M</td></tr>
+            <tr><td class="mono">2021-05</td><td class="mono">2021-08</td><td class="num">EUR 1.24M</td><td class="num">${deltaHTML(11.8)}</td><td class="num muted">3M</td></tr>
+            <tr><td class="mono">2021-08</td><td class="mono">2021-11</td><td class="num">EUR 1.38M</td><td class="num">${deltaHTML(-4.7)}</td><td class="num muted">3M</td></tr>
+            <tr><td class="mono">2022-02</td><td class="mono">2022-05</td><td class="num">EUR 1.31M</td><td class="num">${deltaHTML(-12.4)}</td><td class="num muted">3M</td></tr>
+            <tr><td class="mono">2022-05</td><td class="mono">2022-08</td><td class="num">EUR 1.15M</td><td class="num">${deltaHTML(7.4)}</td><td class="num muted">3M</td></tr>
+            <tr><td class="mono">2023-02</td><td class="mono">2023-05</td><td class="num">EUR 1.42M</td><td class="num">${deltaHTML(18.7)}</td><td class="num muted">3M</td></tr>
+            <tr><td class="mono">2024-02</td><td class="mono">2024-05</td><td class="num">EUR 2.18M</td><td class="num">${deltaHTML(22.3)}</td><td class="num muted">3M</td></tr>
+            <tr><td class="mono">2024-08</td><td class="mono">2024-11</td><td class="num">EUR 2.81M</td><td class="num">${deltaHTML(14.4)}</td><td class="num muted">3M</td></tr>
+            <tr><td class="mono">2025-05</td><td class="mono">2025-08</td><td class="num">EUR 3.18M</td><td class="num">${deltaHTML(8.6)}</td><td class="num muted">3M</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+function initTrade() {
+  if (!document.getElementById('trade-chart')) return;
+  const labels = monthlyLabels(60);
+  const portfolio = synthSeries(100, 347, 60, 14);
+  const sp500 = synthSeries(100, 178, 60, 8);
+  const gold = synthSeries(100, 145, 60, 6);
+  const btc = synthSeries(100, 320, 60, 25);
+  lineChart('trade-chart', [
+    { label: 'Portfolio', data: portfolio, borderColor: cssVar('--accent-amber'), backgroundColor: 'transparent', borderWidth: 1.6 },
+    { label: 'S&P 500', data: sp500, borderColor: cssVar('--tag-observed'), backgroundColor: 'transparent', borderDash: [3,3] },
+    { label: 'Gold', data: gold, borderColor: cssVar('--color-warning'), backgroundColor: 'transparent', borderDash: [3,3] },
+    { label: 'BTC', data: btc, borderColor: cssVar('--tag-interpreted'), backgroundColor: 'transparent', borderDash: [3,3] }
+  ], labels);
+}
+
+/* ============================================================
+   PAGE: PORTFOLIO
+   ============================================================ */
+function renderPortfolio() {
+  const p = BART_DATA.user.portfolio;
+  const allocLegend = p.allocation.map(s => `<div class="donut-legend-row">
+    <span class="swatch" style="background:${s.color}"></span>
+    <span class="lbl">${s.segment}</span>
+    <span class="pct">${s.pct.toFixed(1)}%</span>
+    <span class="vl">${fmtEur(s.value, { compact: true })}</span>
+  </div>`).join('');
+
+  const holdingsRows = p.holdings.map(h => {
+    const a = BART_DATA.artworks.find(x => x.id === h.artworkId);
+    if (!a) return '';
+    const pnl = h.currentFV - h.acquired;
+    const pnlPct = (pnl / h.acquired) * 100;
+    return `<tr class="clickable" data-route="artwork" data-artwork-id="${a.id}">
+      <td><div class="row-icon"><div class="row-thumb">${synthPainting(a.id.length)}</div><div><div class="row-name">${a.title.slice(0,30)}</div><div class="row-sub">${a.artist}</div></div></div></td>
+      <td class="muted">${h.segment}</td>
+      <td class="num">${fmtEur(h.acquired, { compact: true })}</td>
+      <td class="num">${fmtEur(h.currentFV, { compact: true })}</td>
+      <td class="num">${deltaHTML(pnlPct)}</td>
+      <td class="num text-amber">${a.bartScore}</td>
+      <td class="num"><span class="inline-bar"><span class="inline-bar-fill" style="width:${a.liquidity}%"></span></span> <span class="mono">${a.liquidity}</span></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Portfolio <span class="sep">/</span> Pro Tier <span class="sep">/</span> ${p.holdings.length} holdings</div>
+      <h1 class="h1" style="margin-top:6px">My Portfolio</h1>
+    </div>
+    <div class="page-header-right">
+      <button class="tool-btn">Add holding</button>
+      <button class="tool-btn">IFRS 13 export</button>
+      <button class="tool-btn">Rebalance</button>
+    </div>
+  </div>
+  <div class="signature-metrics">
+    <div class="sig-cell"><div class="metric-label">TOTAL VALUE</div><div class="metric-value lg">${fmtEur(p.totalValue, { compact: true })}</div><div class="metric-sub">${deltaHTML(p.pnlPct)} vs cost basis</div></div>
+    <div class="sig-cell"><div class="metric-label">P&amp;L PROXY</div><div class="metric-value">${fmtEur(p.pnl, { compact: true })}</div><div class="metric-sub">unrealized</div></div>
+    <div class="sig-cell"><div class="metric-label">CONFIDENCE AVG</div><div class="metric-value">82</div><div class="metric-band">${scoreDots(82)}</div></div>
+    <div class="sig-cell"><div class="metric-label">LIQUIDITY AVG</div><div class="metric-value">61</div><div class="metric-band">${scoreDots(61)}</div></div>
+  </div>
+  <div class="grid-2 mb-24">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Allocation by Segment</div><div class="panel-meta">Live</div></div>
+      <div class="panel-body">
+        <div class="donut-wrap">${donutSVG(p.allocation, 180)}<div class="donut-legend">${allocLegend}</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Concentration &amp; Liquidity Risk</div></div>
+      <div class="panel-body">
+        <div class="grid-2">
+          <div><div class="metric-label">CONCENTRATION SINGLE</div><div class="mono" style="font-size:18px">33.7%</div><div class="caption mt-4">Modern Masters (Kusama)</div></div>
+          <div><div class="metric-label">CONCENTRATION TOP 3</div><div class="mono" style="font-size:18px">79.6%</div><div class="caption mt-4">Modern + Photo + UC</div></div>
+        </div>
+        <div class="rule-block" style="margin-top:14px">
+          <strong>Rebalance suggestion.</strong> Reduce Photography exposure (-12pp) and increase Blue Chip (+10pp) to lower volatility-weighted concentration. Current Sharpe 0.74, target 0.95.
+        </div>
+        <div class="mt-16">
+          <div class="metric-label">LIQUIDITY MIX</div>
+          <div class="grid-2 mt-4" style="gap:8px">
+            <div><div class="caption">High (&gt;70)</div><div class="mono">31%</div></div>
+            <div><div class="caption">Medium (40-70)</div><div class="mono">42%</div></div>
+            <div><div class="caption">Low (&lt;40)</div><div class="mono text-down">21%</div></div>
+            <div><div class="caption">Reserve</div><div class="mono">6%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel mb-24">
+    <div class="panel-head"><div class="panel-title">Holdings</div><div class="panel-meta">Click to open work</div></div>
+    <div class="panel-body flush">
+      <table class="dtable">
+        <thead><tr><th>Work</th><th>Segment</th><th class="num">Acquired</th><th class="num">Fair Value</th><th class="num">P&amp;L</th><th class="num">Bart</th><th class="num">Liquidity</th></tr></thead>
+        <tbody>${holdingsRows}</tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+
+function initPortfolio() {}
+/* ============================================================
+   PAGE: SIGNALS
+   ============================================================ */
+function renderSignals() {
+  const filters = ['All', 'Movers', 'Alerts', 'Fair Value', 'Events', 'Watchlist', 'Confidence'];
+  const filterHTML = filters.map((f, i) => `<button class="tool-btn ${i === 0 ? 'active' : ''}">${f}</button>`).join('');
+  const rows = BART_DATA.signals.map(s => {
+    const cls = s.impactClass || 'neutral';
+    return `<div class="signal-row" ${s.linkArtwork ? `data-route="artwork" data-artwork-id="${s.linkArtwork}"` : ''}>
+      <div class="signal-time">${s.time}</div>
+      <div class="signal-type ${s.type}">${s.type.toUpperCase().replace('-',' ')}</div>
+      <div class="signal-text">${s.text}</div>
+      <div class="signal-impact text-${cls}">${s.impact}</div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Signals <span class="sep">/</span> Real-time feed <span class="sep">/</span> Updated 14m ago</div>
+      <h1 class="h1" style="margin-top:6px">Signals Engine</h1>
+    </div>
+    <div class="page-header-right">
+      <button class="tool-btn">Pause</button>
+      <button class="tool-btn">Export</button>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <span class="filter-label">FILTER</span>
+    ${filterHTML}
+    <span class="spacer"></span>
+    <span class="filter-label">SEGMENT</span>
+    <button class="tool-btn">All</button>
+    <button class="tool-btn">Ultra-C</button>
+    <button class="tool-btn">Modern</button>
+    <button class="tool-btn">Blue Chip</button>
+  </div>
+  <div class="panel" style="border-top:none">${rows}</div>
+  `;
+}
+
+function initSignals() {}
+
+/* ============================================================
+   PAGE: GALLERIES
+   ============================================================ */
+function renderGalleries() {
+  const rows = BART_DATA.galleries.map(g => `<tr>
+    <td><div class="row-icon"><div class="row-thumb"></div><div><div class="row-name">${g.name}</div><div class="row-sub">${g.cities}</div></div></div></td>
+    <td><span class="tag ${g.tier === 'Mega' ? 'observed' : 'estimated'}"><span class="tag-dot"></span>${g.tier}</span></td>
+    <td class="num">${g.roster}</td>
+    <td class="num text-amber">${g.bartScore}</td>
+    <td class="num">${deltaHTML(g.avg5y)}</td>
+  </tr>`).join('');
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Discovery <span class="sep">/</span> Galleries <span class="sep">/</span> ${BART_DATA.galleries.length} tracked</div>
+      <h1 class="h1" style="margin-top:6px">Galleries</h1>
+      <div class="caption mt-4">Bart Score Dealer — unique on the market. No competitor scores galleries.</div>
+    </div>
+    <div class="page-header-right">
+      <button class="tool-btn">Add gallery</button>
+      <button class="tool-btn">Filter by tier</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div class="panel-title">Top-tier Galleries</div><div class="panel-meta">By Bart Score Dealer</div></div>
+    <div class="panel-body flush">
+      <table class="dtable">
+        <thead><tr><th>Gallery</th><th>Tier</th><th class="num">Roster</th><th class="num">Bart Score</th><th class="num">Avg 5Y appreciation</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="rule-block mt-16">
+    <strong>Bart Score Dealer.</strong> Unique scoring system in the market — combines (i) average roster appreciation 5Y, (ii) institutional placement rate, (iii) art fair selectivity (Basel/Frieze/FIAC), (iv) cross-segment positioning, (v) gallery discoverability of emerging artists. No external competitor produces equivalent scores.
+  </div>
+  `;
+}
+function initGalleries() {}
+
+/* ============================================================
+   PAGE: WATCHLIST
+   ============================================================ */
+function renderWatchlist() {
+  const rows = BART_DATA.user.watchlist.map(w => {
+    const a = BART_DATA.artworks.find(x => x.id === w.artworkId);
+    if (!a) return '';
+    return `<tr class="clickable" data-route="artwork" data-artwork-id="${a.id}">
+      <td><div class="row-icon"><div class="row-thumb">${synthPainting(a.id.length)}</div><div><div class="row-name">${a.title.slice(0,32)}</div><div class="row-sub">${a.artist}</div></div></div></td>
+      <td class="muted">${a.segment}</td>
+      <td class="num">${fmtEur(w.addedPrice, { compact: true })}</td>
+      <td class="num">${fmtEur(w.currentFV, { compact: true })}</td>
+      <td class="num">${deltaHTML(w.deltaFV)}</td>
+      <td class="num text-amber">${a.bartScore}</td>
+      <td class="num"><span class="inline-bar"><span class="inline-bar-fill" style="width:${a.confidence}%"></span></span> <span class="mono">${a.confidence}</span></td>
+      <td class="num"><span class="inline-bar"><span class="inline-bar-fill" style="width:${a.liquidity}%"></span></span> <span class="mono">${a.liquidity}</span></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Analytics <span class="sep">/</span> Watchlist</div>
+      <h1 class="h1" style="margin-top:6px">Watchlist</h1>
+      <div class="caption mt-4">${BART_DATA.user.watchlist.length} works tracked · alerts active on Fair Value &amp; auctions</div>
+    </div>
+    <div class="page-header-right">
+      <button class="tool-btn">Add work</button>
+      <button class="tool-btn">Set alert rule</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div class="panel-title">Tracked Works</div><div class="panel-meta">Click to open</div></div>
+    <div class="panel-body flush">
+      <table class="dtable">
+        <thead><tr><th>Work</th><th>Segment</th><th class="num">Added at</th><th class="num">Fair Value</th><th class="num">Δ vs Add</th><th class="num">Bart</th><th class="num">Confidence</th><th class="num">Liquidity</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+function initWatchlist() {}
+
+/* ============================================================
+   PAGE: MOVEMENTS
+   ============================================================ */
+function renderMovements() {
+  const movements = [
+    { name: 'Lyrical Abstraction Post-2018', region: 'USA · UK', count: 40, perf: 38, key: ['Bull','Quin','Quarles'] },
+    { name: 'Düsseldorf School (legacy)', region: 'DE · post-1990', count: 28, perf: 12, key: ['Gursky','Struth','Höfer'] },
+    { name: 'New Figuration', region: 'USA · UK · ZA', count: 64, perf: 24, key: ['Toor','Boafo','Weyant'] },
+    { name: 'Speculative Realism Painting', region: 'USA · DE', count: 18, perf: 31, key: ['Singer','Rauch'] },
+    { name: 'African Diaspora Contemporary', region: 'GH · NG · USA', count: 52, perf: 41, key: ['Boafo','Crosby','Mehretu'] },
+    { name: 'Post-Internet Sculpture', region: 'USA · DE · UK', count: 22, perf: -8, key: ['Trecartin','Arsham'] }
+  ];
+  const cards = movements.map(m => `<div class="panel" style="cursor:pointer">
+    <div class="panel-body">
+      <div class="caption">${m.region} · ${m.count} active artists</div>
+      <div class="serif" style="font-size:18px;font-weight:600;margin-top:4px">${m.name}</div>
+      <div class="mt-8 mono" style="font-size:18px;color:${m.perf > 0 ? 'var(--color-up)' : 'var(--color-down)'}">${deltaHTML(m.perf)} <span style="font-size:10px;color:var(--text-tertiary)">vs UC Index 5Y</span></div>
+      <div class="mt-8 caption">Key artists: ${m.key.join(' · ')}</div>
+    </div>
+  </div>`).join('');
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Discovery <span class="sep">/</span> Movements</div>
+      <h1 class="h1" style="margin-top:6px">Movements &amp; Sub-segments</h1>
+      <div class="caption mt-4">Cross-cutting tags · click any movement to open the constituent artists</div>
+    </div>
+  </div>
+  <div class="grid-3">${cards}</div>
+  `;
+}
+function initMovements() {}
+
+/* ============================================================
+   PAGE: RESEARCH (chat copilot)
+   ============================================================ */
+function renderResearch() {
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Research <span class="sep">/</span> Copilot</div>
+      <h1 class="h1" style="margin-top:6px">Ask Bart</h1>
+      <div class="caption mt-4">Conversational interface over the BART data graph. Function calling on indices, artworks, artists, signals.</div>
+    </div>
+  </div>
+  <div class="research-chat">
+    <div class="chat-msg user">
+      <div class="role">Gabriel · 14:08</div>
+      Compare Lucy Bull vs Avery Singer over the last 24 months. Focus on Fair Value drift and institutional validation events.
+    </div>
+    <div class="chat-msg bart">
+      <div class="role">Bart · 14:08</div>
+      <p>Both artists belong to the Ultra-Contemporary segment but sit at different career stages.</p>
+      <p style="margin-top:8px"><strong>Lucy Bull</strong> (Bart Score 84, Confidence 76). Fair Value mid <span class="mono">EUR 465k</span>, +127% over 5Y. Single major institutional event: Pinault Collection acquisition (2022). Whitney inclusion 2024 reinforced trajectory.</p>
+      <p style="margin-top:8px"><strong>Avery Singer</strong> (Bart Score 88, Confidence 82). Fair Value mid <span class="mono">EUR 920k</span>. Multiple institutional events: Whitney solo (2018), Stedelijk solo (2022), Hauser &amp; Wirth Basel 2025. More mature pricing, lower volatility (Liquidity 48 vs 34 for Bull).</p>
+      <p style="margin-top:8px"><strong>Recommendation context.</strong> Bull offers higher upside asymmetry (+44% YoY momentum), but the Liquidity gap (-14pts) means a ≥36M holding period applies. Singer offers smoother carry with institutional depth.</p>
+    </div>
+    <div class="chat-msg user">
+      <div class="role">Gabriel · 14:09</div>
+      Generate a one-page memo with key risks and present it as a PDF.
+    </div>
+    <div class="chat-msg bart">
+      <div class="role">Bart · 14:09</div>
+      Memo drafted: <em>Bull vs Singer · Comparative Brief</em>. Includes 4 sections (positioning, drivers, risks, recommended action). PDF export ready: <a class="text-amber" style="cursor:pointer">download memo.pdf</a>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" placeholder="Ask Bart anything about the market...">
+      <button class="action-btn primary" style="padding:8px 18px"><i data-lucide="send"></i>Send</button>
+    </div>
+  </div>
+  `;
+}
+function initResearch() {}
+
+/* ============================================================
+   PAGE: REPORTS
+   ============================================================ */
+function renderReports() {
+  const reports = [
+    { title: 'Q4 2025 Ultra-Contemporary Outlook', date: '11 NOV 2025', type: 'Quarterly', pages: 18, status: 'NEW' },
+    { title: 'Whitney Biennial 2026 Pre-Show Brief', date: '08 NOV 2025', type: 'Event Brief', pages: 12, status: 'NEW' },
+    { title: 'Pinault Collection Disposal Patterns 2018-2025', date: '02 NOV 2025', type: 'Deep Dive', pages: 34, status: 'READ' },
+    { title: 'Photography Index Methodology Update', date: '24 OCT 2025', type: 'Methodology', pages: 9, status: 'READ' },
+    { title: 'African Diaspora Contemporary 2025 Mid-Year', date: '15 OCT 2025', type: 'Segment Report', pages: 22, status: 'READ' },
+    { title: 'IFRS 13 Fair Value Hierarchy for Art Assets', date: '02 OCT 2025', type: 'Compliance', pages: 14, status: 'READ' }
+  ];
+  const rows = reports.map(r => `<tr class="clickable">
+    <td><div class="row-name">${r.title}</div><div class="row-sub">${r.type}</div></td>
+    <td class="mono muted">${r.date}</td>
+    <td class="num muted">${r.pages}p</td>
+    <td><span class="tag ${r.status === 'NEW' ? 'observed' : ''}">${r.status === 'NEW' ? '<span class="tag-dot"></span>NEW' : 'READ'}</span></td>
+    <td class="num"><a class="tool-btn">Open PDF</a></td>
+  </tr>`).join('');
+
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="eyebrow">Research <span class="sep">/</span> Reports</div>
+      <h1 class="h1" style="margin-top:6px">Reports Library</h1>
+      <div class="caption mt-4">Curated outputs · quarterly, event briefs, methodology updates, deep dives</div>
+    </div>
+    <div class="page-header-right"><button class="tool-btn">Subscribe</button></div>
+  </div>
+  <div class="panel">
+    <div class="panel-body flush">
+      <table class="dtable">
+        <thead><tr><th>Report</th><th>Date</th><th class="num">Length</th><th>Status</th><th class="num">Action</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>
+  `;
+}
+function initReports() {}
+
+/* INDICES alias for nav (uses Markets page) */
+function renderIndices() { return renderMarkets(); }
+function initIndices() { initMarkets(); }
+/* ============================================================
+   ROUTING & APP INIT
+   ============================================================ */
+const ROUTES = {
+  home: { render: renderHome, init: initHome, label: 'Home' },
+  markets: { render: renderMarkets, init: initMarkets, label: 'Markets' },
+  indices: { render: renderIndices, init: initIndices, label: 'Indices' },
+  artwork: { render: renderArtwork, init: initArtwork, label: 'Artwork' },
+  artist: { render: renderArtist, init: initArtist, label: 'Artist' },
+  trade: { render: renderTrade, init: initTrade, label: 'Trade' },
+  portfolio: { render: renderPortfolio, init: initPortfolio, label: 'Portfolio' },
+  signals: { render: renderSignals, init: initSignals, label: 'Signals' },
+  galleries: { render: renderGalleries, init: initGalleries, label: 'Galleries' },
+  watchlist: { render: renderWatchlist, init: initWatchlist, label: 'Watchlist' },
+  movements: { render: renderMovements, init: initMovements, label: 'Movements' },
+  research: { render: renderResearch, init: initResearch, label: 'Research' },
+  reports: { render: renderReports, init: initReports, label: 'Reports' }
+};
+
+let _currentRoute = 'home';
+let _currentRouteArg = null;
+
+function navigate(routeName, arg) {
+  const route = ROUTES[routeName];
+  if (!route) return;
+  _currentRoute = routeName;
+  _currentRouteArg = arg;
+
+  // update sidebar active state
+  $$('.nav-item').forEach(el => el.classList.toggle('active', el.dataset.route === routeName));
+
+  // render
+  const main = $('#main');
+  main.innerHTML = `<section class="page active">${route.render(arg)}</section>`;
+  main.scrollTop = 0;
+
+  // re-init lucide icons
+  if (window.lucide && window.lucide.createIcons) {
+    window.lucide.createIcons();
+  }
+
+  // init charts (after DOM mounted)
+  setTimeout(() => { try { route.init && route.init(); } catch(e) { console.error(e); } }, 0);
+}
+
+window.rerenderCurrentRoute = function() {
+  navigate(_currentRoute, _currentRouteArg);
+};
+
+/* CLICK DELEGATION — any element with data-route navigates */
+function setupRouting() {
+  document.body.addEventListener('click', (e) => {
+    let el = e.target;
+    while (el && el !== document.body) {
+      if (el.dataset && el.dataset.route) {
+        const route = el.dataset.route;
+        const arg = el.dataset.artworkId || el.dataset.artistId || el.dataset.indexId;
+        e.preventDefault();
+        navigate(route, arg);
+        return;
+      }
+      // index tab inside markets
+      if (el.dataset && el.dataset.indexTab) {
+        e.preventDefault();
+        navigate('markets', el.dataset.indexTab);
+        return;
+      }
+      el = el.parentElement;
+    }
+  });
+}
+
+/* APP BOOTSTRAP */
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+  renderTicker();
+  setupTheme();
+  setupRouting();
+  navigate('home');
+});
+</script>
+</body>
+</html>
