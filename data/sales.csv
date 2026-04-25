@@ -1,0 +1,8 @@
+sale_id,artwork_id,artist_name,category,sale_date,auction_house,sale_price_eur,estimate_low_eur,estimate_high_eur,sold_above_estimate,buyer_type,buyer_name,buyer_nationality,seller_type,seller_name,sale_location,source
+SL001,BK001,Banksy,Street Art,2016-06-15,Sotheby's,85000,60000,80000,true,Collectionneur,Anonyme,British,Collectionneur,Anonyme,Londres,MutualArt
+SL002,BK001,Banksy,Street Art,2019-03-22,Christie's,142000,100000,140000,true,Galerie,White Cube Gallery,British,Collectionneur,Anonyme,Londres,MutualArt
+SL003,BK001,Banksy,Street Art,2021-10-14,Sotheby's,195000,150000,190000,true,Collectionneur,Anonyme,American,Galerie,Pest Control Office,Londres,MutualArt
+SL004,BK001,Banksy,Street Art,2023-05-08,Phillips,260000,200000,250000,true,Collectionneur,Anonyme,Swiss,Collectionneur,Anonyme,New York,MutualArt
+SL005,PIC001,Pablo Picasso,Blue Chip,2015-02-11,Christie's,4200000,3500000,4500000,true,Musée,Fondation Beyeler,Swiss,Succession,Succession Picasso,Paris,MutualArt
+SL006,PIC001,Pablo Picasso,Blue Chip,2018-11-20,Sotheby's,7800000,6000000,8000000,true,Collectionneur,Anonyme,American,Collectionneur,Anonyme,New York,MutualArt
+SL007,PIC001,Pablo Picasso,Blue Chip,2022-06-30,Christie's,11500000,9000000,12000000,true,Fondation,Nahmad Collection,Monégasque,Musée,Collection privée européenne,Paris,MutualArt

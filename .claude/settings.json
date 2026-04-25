@@ -1,4 +1,28 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(python3 /home/ad/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/scripts/search.py \"fintech institutional trading terminal dark data-dense professional\" --design-system -p \"BART Art Index Terminal\" -f markdown)",
+      "Bash(python3 /home/ad/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/scripts/search.py \"real-time chart multi-series time-series financial\" --domain chart)",
+      "Bash(xdg-open /home/ad/Desktop/bart/experiments/ui-preview.html)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5555/ui-preview.html)",
+      "mcp__firecrawl__firecrawl_search",
+      "WebFetch(domain:render.com)",
+      "WebFetch(domain:ngrok.com)",
+      "WebFetch(domain:www.pinecone.io)",
+      "WebFetch(domain:qdrant.tech)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:supabase.com)",
+      "WebFetch(domain:platform.claude.ai)",
+      "WebFetch(domain:docs.railway.com)",
+      "WebFetch(domain:docs.pinecone.io)",
+      "WebFetch(domain:docs.voyageai.com)",
+      "WebFetch(domain:designrevision.com)",
+      "WebFetch(domain:community.pinecone.io)",
+      "WebFetch(domain:ranksquire.com)",
+      "WebFetch(domain:karthikeyanrathinam.medium.com)",
+      "WebFetch(domain:www.freetiers.com)"
+    ]
+  },
   "enabledPlugins": {
     "vercel@claude-plugins-official": true
   }

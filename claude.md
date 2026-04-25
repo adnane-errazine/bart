@@ -26,6 +26,7 @@ bart/
 ├── deployment/
 │   ├── web/         ← Vercel (front) + Railway (back)
 │   └── mobile/      ← LOCKED — do not touch unless explicitly told to
+├── experiments/     ← throwaway prototypes, UI previews, spikes — nothing here ships
 └── docs/
     ├── brainstorming.md
     └── architecture.md   ← update this when you change something structural

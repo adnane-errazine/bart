@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BART — Art Index Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #07090f;
+      --surface:      #0d1120;
+      --surface-2:    #111827;
+      --border:       #18243a;
+      --border-hi:    #243350;
+      --text:         #dce5f5;
+      --text-dim:     #5e7099;
+      --text-muted:   #2e3d58;
+      --accent:       #f97316;
+      --accent-bg:    rgba(249,115,22,.1);
+      --accent-border:rgba(249,115,22,.35);
+      --green:        #22c55e;
+      --green-bg:     rgba(34,197,94,.1);
+      --red:          #ef4444;
+      --red-bg:       rgba(239,68,68,.1);
+      --bc:  #60a5fa;
+      --mm:  #a78bfa;
+      --uc:  #f97316;
+      --ph:  #34d399;
+      --sa:  #f472b6;
+      --ui:  'Inter', sans-serif;
+      --mono:'JetBrains Mono', monospace;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--ui); font-size: 13px; line-height: 1.5; overflow: hidden; }
+
+    /* ── APP SHELL ─────────────────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── TOP BAR ───────────────────────────────────────────────── */
+    #topbar {
+      display: grid;
+      grid-template-columns: 210px 1fr 180px;
+      align-items: center;
+      height: 46px;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      padding: 0 16px;
+    }
+
+    #logo {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+    }
+    .logo-mark {
+      font-family: var(--mono);
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+    .logo-sub {
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    #tickers {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      height: 100%;
+    }
+    .tick {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 18px;
+      border-left: 1px solid var(--border);
+      cursor: default;
+      transition: background .12s;
+    }
+    .tick:last-child { border-right: 1px solid var(--border); }
+    .tick:hover { background: var(--surface-2); }
+    .tick-code  { font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: .8px; }
+    .tick-val   { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
+    .tick-chg   { font-family: var(--mono); font-size: 10px; font-weight: 500; }
+    .up   { color: var(--green); }
+    .down { color: var(--red); }
+
+    #clock-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    #clock { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: .5px; }
+    #date  { font-size: 10px; color: var(--text-dim); letter-spacing: .5px; }
+
+    /* ── CONTENT AREA ──────────────────────────────────────────── */
+    #content {
+      display: grid;
+      grid-template-columns: 1fr 272px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── CHART PANEL ───────────────────────────────────────────── */
+    #chart-panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    #chart-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 38px;
+      flex-shrink: 0;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      gap: 12px;
+    }
+
+    .panel-tag {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .toggles {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      padding: 0 8px;
+    }
+    .tgl {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-dim);
+      user-select: none;
+      transition: color .12s;
+    }
+    .tgl:hover { color: var(--text); }
+    .tgl input { display: none; }
+    .tgl-dot { width: 7px; height: 7px; flex-shrink: 0; }
+    .tgl input:not(:checked) ~ .tgl-dot { opacity: .25; }
+    .tgl input:not(:checked) ~ .tgl-name { opacity: .4; }
+    .tgl input:checked ~ .tgl-name { color: var(--text); font-weight: 500; }
+
+    .periods {
+      display: flex;
+    }
+    .per {
+      background: none;
+      border: 1px solid var(--border);
+      border-right: none;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      padding: 3px 9px;
+      cursor: pointer;
+      transition: all .12s;
+    }
+    .per:last-child { border-right: 1px solid var(--border); }
+    .per:hover { background: var(--surface-2); color: var(--text); }
+    .per.active { background: var(--accent-bg); color: var(--accent); border-color: var(--accent-border); }
+    .per.active + .per { border-left-color: var(--accent-border); }
+
+    #chart-wrap {
+      flex: 1;
+      min-height: 0;
+      padding: 10px 8px 10px 14px;
+      position: relative;
+    }
+
+    /* ── SIDEBAR ───────────────────────────────────────────────── */
+    #sidebar {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .s-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 38px;
+      flex-shrink: 0;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .s-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--text-muted);
+      letter-spacing: .5px;
+    }
+
+    /* Trade Ticket */
+    #trade {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .f-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    .f-row { margin-bottom: 9px; }
+    .f-select, .f-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 5px 8px;
+      outline: none;
+      transition: border-color .12s;
+      -webkit-appearance: none;
+    }
+    .f-select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235e7099'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 22px; }
+    .f-select:focus, .f-input:focus { border-color: var(--accent); }
+    .f-select option { background: var(--surface-2); }
+
+    .dir-wrap { display: grid; grid-template-columns: 1fr 1fr; }
+    .dir-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      padding: 6px 0;
+      cursor: pointer;
+      transition: all .12s;
+      text-align: center;
+    }
+    .dir-btn:first-child { border-right: none; }
+    .dir-btn.long.on  { background: var(--green-bg); color: var(--green);  border-color: var(--green);  }
+    .dir-btn.short.on { background: var(--red-bg);   color: var(--red);    border-color: var(--red);    }
+    .dir-btn.long.on + .dir-btn.short { border-left-color: var(--green); }
+
+    .run-btn {
+      width: 100%;
+      background: var(--accent);
+      border: none;
+      color: #06080e;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 8px 0;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: opacity .12s;
+      margin-top: 1px;
+    }
+    .run-btn:hover    { opacity: .82; }
+    .run-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    #bt-results { display: none; margin-top: 9px; }
+    .res-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+    .res-cell { background: var(--bg); padding: 7px 9px; }
+    .res-lbl  { font-size: 8px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); margin-bottom: 3px; }
+    .res-val  { font-family: var(--mono); font-size: 15px; font-weight: 600; line-height: 1; }
+    .pos { color: var(--green); } .neg { color: var(--red); } .neu { color: var(--text); }
+
+    .spin {
+      display: inline-block;
+      width: 9px; height: 9px;
+      border: 1.5px solid var(--border-hi);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .55s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Anomaly Insights */
+    #anomaly {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .anomaly-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      padding: 2px 7px;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: .5px;
+      margin-bottom: 7px;
+    }
+    .anomaly-q {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-bottom: 7px;
+    }
+    .anomaly-ans {
+      font-size: 10.5px;
+      color: var(--text);
+      line-height: 1.65;
+    }
+    .cursor {
+      display: inline-block;
+      width: 5px; height: 10px;
+      background: var(--accent);
+      margin-left: 1px;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── CHAT ──────────────────────────────────────────────────── */
+    #chat {
+      display: flex;
+      flex-direction: column;
+      height: 214px;
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    #chat-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 34px;
+      flex-shrink: 0;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .live-dot {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--green);
+      letter-spacing: .8px;
+    }
+    .pulse {
+      width: 5px; height: 5px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    #msgs {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+    }
+    #msgs::-webkit-scrollbar { width: 3px; }
+    #msgs::-webkit-scrollbar-track { background: var(--bg); }
+    #msgs::-webkit-scrollbar-thumb { background: var(--border-hi); }
+
+    .msg { display: flex; gap: 7px; }
+    .msg.u { align-self: flex-end; flex-direction: row-reverse; }
+
+    .av {
+      width: 22px; height: 22px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 8px; font-weight: 600;
+    }
+    .av.agent { background: var(--accent-bg); border: 1px solid var(--accent-border); color: var(--accent); }
+    .av.user  { background: var(--surface-2); border: 1px solid var(--border-hi); color: var(--text-dim); }
+
+    .bbl {
+      padding: 6px 9px;
+      font-size: 10.5px;
+      line-height: 1.6;
+      max-width: calc(100% - 30px);
+    }
+    .msg.agent .bbl { background: var(--surface); border: 1px solid var(--border); border-left: 2px solid var(--accent); color: var(--text); }
+    .msg.u .bbl     { background: var(--surface-2); border: 1px solid var(--border-hi); color: var(--text); }
+
+    .hi { font-family: var(--mono); color: var(--accent); }
+    .dim { color: var(--text-dim); font-style: italic; }
+
+    #typing { display: none; gap: 7px; align-items: center; }
+    .dots { display: flex; gap: 3px; }
+    .dot {
+      width: 3px; height: 3px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: td 1.2s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .2s; }
+    .dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes td { 0%,100%{opacity:.3;transform:translateY(0)} 50%{opacity:1;transform:translateY(-2px)} }
+
+    #chat-in {
+      display: flex;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #chat-input {
+      flex: 1;
+      background: var(--surface);
+      border: none;
+      color: var(--text);
+      font-family: var(--ui);
+      font-size: 11.5px;
+      padding: 9px 13px;
+      outline: none;
+    }
+    #chat-input::placeholder { color: var(--text-muted); }
+    #send-btn {
+      background: none;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      padding: 0 13px;
+      cursor: pointer;
+      transition: all .12s;
+    }
+    #send-btn:hover { background: var(--accent-bg); color: var(--accent); }
+
+    /* ── FOOTER ────────────────────────────────────────────────── */
+    #footer {
+      height: 22px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 9px;
+      color: var(--text-muted);
+      letter-spacing: .4px;
+      gap: 16px;
+    }
+    .footer-sep { color: var(--text-muted); opacity: .4; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══ TOP BAR ════════════════════════════════════════════════ -->
+  <header id="topbar">
+    <div id="logo">
+      <span class="logo-mark">BART</span>
+      <span class="logo-sub">Art Index Terminal</span>
+    </div>
+
+    <div id="tickers">
+      <div class="tick"><span class="tick-code" style="color:var(--bc)">BC</span><span class="tick-val" id="tv-bc">4,247.8</span><span class="tick-chg up">+0.8%</span></div>
+      <div class="tick"><span class="tick-code" style="color:var(--mm)">MM</span><span class="tick-val" id="tv-mm">3,891.2</span><span class="tick-chg down">−0.3%</span></div>
+      <div class="tick"><span class="tick-code" style="color:var(--uc)">UC</span><span class="tick-val" id="tv-uc">3,124.5</span><span class="tick-chg up">+2.1%</span></div>
+      <div class="tick"><span class="tick-code" style="color:var(--ph)">PH</span><span class="tick-val" id="tv-ph">2,156.9</span><span class="tick-chg up">+0.4%</span></div>
+      <div class="tick"><span class="tick-code" style="color:var(--sa)">SA</span><span class="tick-val" id="tv-sa">5,089.3</span><span class="tick-chg up" style="color:var(--accent)">+4.2% ⚑</span></div>
+    </div>
+
+    <div id="clock-wrap">
+      <div id="clock">--:--:--</div>
+      <div id="date">---</div>
+    </div>
+  </header>
+
+  <!-- ═══ CONTENT (chart + sidebar) ═════════════════════════════ -->
+  <div id="content">
+
+    <!-- Chart panel -->
+    <div id="chart-panel">
+      <div id="chart-bar">
+        <span class="panel-tag">Art Market Indices</span>
+
+        <div class="toggles">
+          <label class="tgl"><input type="checkbox" checked data-s="0"><div class="tgl-dot" style="background:var(--bc)"></div><span class="tgl-name">Blue Chip</span></label>
+          <label class="tgl"><input type="checkbox" checked data-s="1"><div class="tgl-dot" style="background:var(--mm)"></div><span class="tgl-name">Modern Masters</span></label>
+          <label class="tgl"><input type="checkbox" checked data-s="2"><div class="tgl-dot" style="background:var(--uc)"></div><span class="tgl-name">Ultra-Contemporary</span></label>
+          <label class="tgl"><input type="checkbox" checked data-s="3"><div class="tgl-dot" style="background:var(--ph)"></div><span class="tgl-name">Photography</span></label>
+          <label class="tgl"><input type="checkbox" checked data-s="4"><div class="tgl-dot" style="background:var(--sa)"></div><span class="tgl-name">Street Art</span></label>
+        </div>
+
+        <div class="periods">
+          <button class="per" data-p="12">1Y</button>
+          <button class="per" data-p="36">3Y</button>
+          <button class="per" data-p="60">5Y</button>
+          <button class="per active" data-p="120">10Y</button>
+        </div>
+      </div>
+
+      <div id="chart-wrap">
+        <canvas id="c"></canvas>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+
+      <!-- Trade Ticket -->
+      <div class="s-header">
+        <span class="panel-tag">Trade Ticket</span>
+        <span class="s-badge">SIMULATOR</span>
+      </div>
+      <div id="trade">
+        <div class="f-row">
+          <div class="f-label">Segment</div>
+          <select class="f-select" id="seg">
+            <option value="bc">Blue Chip</option>
+            <option value="mm">Modern Masters</option>
+            <option value="uc" selected>Ultra-Contemporary</option>
+            <option value="ph">Photography</option>
+            <option value="sa">Street Art</option>
+          </select>
+        </div>
+        <div class="f-row">
+          <div class="f-label">Direction</div>
+          <div class="dir-wrap">
+            <button class="dir-btn long on" id="dlong">LONG</button>
+            <button class="dir-btn short" id="dshort">SHORT</button>
+          </div>
+        </div>
+        <div class="f-row">
+          <div class="f-label">Notional (USD)</div>
+          <input class="f-input" type="text" id="notional" placeholder="1,000,000" value="1,000,000">
+        </div>
+        <button class="run-btn" id="run">Run Backtest</button>
+        <div id="bt-results">
+          <div class="res-grid">
+            <div class="res-cell"><div class="res-lbl">P&amp;L (5Y)</div><div class="res-val pos" id="r-pnl">—</div></div>
+            <div class="res-cell"><div class="res-lbl">Sharpe</div><div class="res-val neu" id="r-sharpe">—</div></div>
+            <div class="res-cell"><div class="res-lbl">Max Drawdown</div><div class="res-val neg" id="r-mdd">—</div></div>
+            <div class="res-cell"><div class="res-lbl">vs S&amp;P 500</div><div class="res-val pos" id="r-sp">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anomaly Insights -->
+      <div class="s-header" style="height:34px;">
+        <span class="panel-tag">Anomaly Insights</span>
+      </div>
+      <div id="anomaly">
+        <div class="anomaly-pill">SA +4.2% ↑ ANOMALY</div>
+        <div class="anomaly-q">"Why is Street Art up this week?"</div>
+        <div class="anomaly-ans"><span id="atext"></span><span class="cursor" id="acursor"></span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ CHAT ════════════════════════════════════════════════════ -->
+  <div id="chat">
+    <div id="chat-hd">
+      <span class="panel-tag">Research Agent</span>
+      <div class="live-dot"><div class="pulse"></div>LIVE</div>
+    </div>
+
+    <div id="msgs">
+      <div class="msg u">
+        <div class="av user">YOU</div>
+        <div class="bbl">Compare Banksy vs KAWS over 5 years. Who's overvalued?</div>
+      </div>
+      <div class="msg agent">
+        <div class="av agent">AI</div>
+        <div class="bbl">Repeat-sales regression: Banksy RSR <span class="hi">+312%</span> vs KAWS <span class="hi">+189%</span> over 60 months. Banksy PER <span class="hi">4.2×</span> vs KAWS <span class="hi">2.8×</span> — 34% narrative premium. Adjusted for medium (prints vs sculptures), KAWS multiples show stronger intrinsic value support. Banksy overvalued relative to fundamentals; KAWS has room to run.</div>
+      </div>
+      <div class="msg u">
+        <div class="av user">YOU</div>
+        <div class="bbl">Sharpe for Ultra-Contemporary vs Gold?</div>
+      </div>
+      <div class="msg agent">
+        <div class="av agent">AI</div>
+        <div class="bbl">UC Sharpe (5Y): <span class="hi">0.94</span> — Gold: <span class="hi">0.61</span>. UC outperforms on risk-adjusted basis. Equity correlation: ρ = <span class="hi">0.12</span> vs Gold ρ = <span class="hi">0.31</span>. <span class="dim">HYPOTHESIS: private market adds ~15% volume not captured in index.</span></div>
+      </div>
+      <div id="typing" style="display:none">
+        <div class="av agent">AI</div>
+        <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+    </div>
+
+    <div id="chat-in">
+      <input id="chat-input" type="text" placeholder="Ask anything about the art market...">
+      <button id="send-btn">SEND</button>
+    </div>
+  </div>
+
+  <!-- ═══ FOOTER ══════════════════════════════════════════════════ -->
+  <div id="footer">
+    <span>For informational purposes only. Not investment advice.</span>
+    <span class="footer-sep">|</span>
+    <span>Data: public auction records · BART Terminal v0.1 · 24h Hackathon Build</span>
+  </div>
+
+</div>
+
+<script>
+// ── DATA GENERATION ─────────────────────────────────────────────
+function mkData({ trend, vol, crash, recov, seed }) {
+  let v = 100, rng = seed >>> 0;
+  const out = [100];
+  const rand = () => { rng = (Math.imul(rng, 1664525) + 1013904223) >>> 0; return rng / 0xffffffff; };
+  for (let i = 1; i < 120; i++) {
+    let e = 0;
+    // 2018 correction  months 34–42
+    if (i >= 34 && i < 42) e -= crash * .65 * Math.sin((i-34)/8*Math.PI);
+    // 2020 COVID crash  months 61–65, recovery to 76
+    if (i >= 61 && i <= 65) e -= crash * (i-60)/5;
+    if (i >  65 && i <= 76) e += recov * (i-65)/11;
+    // 2022 correction  months 85–93
+    if (i >= 85 && i < 93) e -= crash * .75 * Math.sin((i-85)/8*Math.PI);
+    // 2023–24 recovery
+    if (i >= 93 && i < 108) e += recov * .25 * (i-93)/15;
+    v = v * (1 + trend/12 + (rand()-.5)*vol + e);
+    if (v < 15) v = 15;
+    out.push(+v.toFixed(2));
+  }
+  return out;
+}
+
+const RAW = {
+  bc: mkData({ trend:.145, vol:.023, crash:.042, recov:.048, seed:42 }),
+  mm: mkData({ trend:.135, vol:.020, crash:.046, recov:.044, seed:137 }),
+  uc: mkData({ trend:.128, vol:.040, crash:.052, recov:.056, seed:911 }),
+  ph: mkData({ trend:.092, vol:.016, crash:.034, recov:.033, seed:256 }),
+  sa: mkData({ trend:.172, vol:.058, crash:.063, recov:.074, seed:777 }),
+};
+
+const KEYS = ['bc','mm','uc','ph','sa'];
+const COLORS = ['#60a5fa','#a78bfa','#f97316','#34d399','#f472b6'];
+const NAMES  = ['Blue Chip','Modern Masters','Ultra-Contemporary','Photography','Street Art'];
+
+function mkLabels(n) {
+  const out = [], d = new Date(2015,0,1);
+  for (let i = 0; i < n; i++) {
+    out.push(d.toLocaleDateString('en-US',{month:'short',year:'2-digit'}));
+    d.setMonth(d.getMonth()+1);
+  }
+  return out;
+}
+const LBLS = mkLabels(120);
+
+function sliceData(period) {
+  const s = 120 - period;
+  return {
+    labels: LBLS.slice(s),
+    datasets: KEYS.map((k,i) => {
+      const raw = RAW[k].slice(s);
+      const base = raw[0];
+      return {
+        label: NAMES[i],
+        data: raw.map(v => +((v/base)*100).toFixed(2)),
+        borderColor: COLORS[i],
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        tension: .3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: COLORS[i],
+        pointHoverBorderColor: '#07090f',
+        pointHoverBorderWidth: 2,
+      };
+    })
+  };
+}
+
+// ── CHART ────────────────────────────────────────────────────────
+const chart = new Chart(document.getElementById('c').getContext('2d'), {
+  type: 'line',
+  data: sliceData(120),
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode:'index', intersect:false },
+    plugins: {
+      legend: { display:false },
+      tooltip: {
+        backgroundColor: '#0d1120',
+        borderColor: '#18243a',
+        borderWidth: 1,
+        titleColor: '#5e7099',
+        bodyColor: '#dce5f5',
+        titleFont: { family:'JetBrains Mono', size:9 },
+        bodyFont:  { family:'JetBrains Mono', size:10 },
+        padding: 10,
+        callbacks: {
+          title: items => items[0].label,
+          label: ctx  => `  ${ctx.dataset.label.padEnd(22)} ${ctx.parsed.y.toFixed(1)}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display:false },
+        border: { color:'#18243a' },
+        ticks: { color:'#2e3d58', font:{ family:'JetBrains Mono', size:9 }, maxTicksLimit:10, maxRotation:0 }
+      },
+      y: {
+        position: 'right',
+        grid: { color:'#18243a' },
+        border: { color:'transparent', dash:[2,4] },
+        ticks: { color:'#2e3d58', font:{ family:'JetBrains Mono', size:9 }, callback:v=>v.toFixed(0) }
+      }
+    },
+    animation: { duration:350, easing:'easeOutQuart' }
+  }
+});
+
+// Period buttons
+document.querySelectorAll('.per').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.per').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const d = sliceData(+btn.dataset.p);
+    chart.data.labels = d.labels;
+    chart.data.datasets.forEach((ds,i) => { ds.data = d.datasets[i].data; });
+    chart.update();
+  });
+});
+
+// Series toggles
+document.querySelectorAll('.tgl input').forEach(cb => {
+  cb.addEventListener('change', () => {
+    chart.data.datasets[+cb.dataset.s].hidden = !cb.checked;
+    chart.update();
+  });
+});
+
+// ── CLOCK ────────────────────────────────────────────────────────
+const fmt2 = n => String(n).padStart(2,'0');
+function tick() {
+  const n = new Date();
+  document.getElementById('clock').textContent = `${fmt2(n.getHours())}:${fmt2(n.getMinutes())}:${fmt2(n.getSeconds())}`;
+  document.getElementById('date').textContent  = n.toLocaleDateString('en-US',{ weekday:'short', month:'short', day:'numeric', year:'numeric' }).toUpperCase();
+}
+tick(); setInterval(tick, 1000);
+
+// ── DIRECTION TOGGLE ─────────────────────────────────────────────
+let dir = 'long';
+document.getElementById('dlong').addEventListener('click', () => { dir='long';  document.getElementById('dlong').classList.add('on');  document.getElementById('dshort').classList.remove('on'); });
+document.getElementById('dshort').addEventListener('click', () => { dir='short'; document.getElementById('dshort').classList.add('on'); document.getElementById('dlong').classList.remove('on'); });
+
+// ── BACKTEST ─────────────────────────────────────────────────────
+const BT = {
+  bc: { pnl:312000, sharpe:'1.02', mdd:14.2, sp:82 },
+  mm: { pnl:287500, sharpe:'0.94', mdd:16.8, sp:74 },
+  uc: { pnl:247500, sharpe:'0.81', mdd:18.4, sp:67 },
+  ph: { pnl:154200, sharpe:'0.73', mdd:12.1, sp:41 },
+  sa: { pnl:408900, sharpe:'0.69', mdd:24.7, sp:108 },
+};
+
+document.getElementById('run').addEventListener('click', function() {
+  this.disabled = true;
+  this.innerHTML = '<span class="spin"></span>COMPUTING';
+  document.getElementById('bt-results').style.display = 'none';
+
+  setTimeout(() => {
+    const r   = BT[document.getElementById('seg').value];
+    const long = dir === 'long';
+    const pnl  = long ? r.pnl : -r.pnl;
+    const sp   = long ? r.sp  : -r.sp;
+    const mdd  = long ? -r.mdd : r.mdd;
+
+    const $pnl = document.getElementById('r-pnl');
+    const $sp  = document.getElementById('r-sp');
+    const $mdd = document.getElementById('r-mdd');
+
+    $pnl.textContent = (pnl >= 0 ? '+' : '−') + '$' + Math.abs(pnl).toLocaleString();
+    $pnl.className   = 'res-val ' + (pnl >= 0 ? 'pos' : 'neg');
+    document.getElementById('r-sharpe').textContent = r.sharpe;
+    $mdd.textContent = (mdd >= 0 ? '+' : '−') + Math.abs(mdd).toFixed(1) + '%';
+    $mdd.className   = 'res-val ' + (mdd >= 0 ? 'pos' : 'neg');
+    $sp.textContent  = (sp >= 0 ? '+' : '−') + Math.abs(sp) + 'pp';
+    $sp.className    = 'res-val ' + (sp >= 0 ? 'pos' : 'neg');
+
+    document.getElementById('bt-results').style.display = 'block';
+    this.disabled = false;
+    this.textContent = 'Run Backtest';
+  }, 950);
+});
+
+// ── ANOMALY TYPEWRITER ───────────────────────────────────────────
+const ATEXT = "Banksy's Venice intervention received institutional press coverage across 14 outlets. Sotheby's London confirmed three major SA lots in the upcoming Evening Sale. Secondary volume on KAWS multiples up 340% vs 30-day avg. Pattern consistent with pre-auction momentum (cf. Oct 2021 run-up).";
+let ai = 0;
+const aEl = document.getElementById('atext');
+const aCur = document.getElementById('acursor');
+
+function typeAnomaly() {
+  if (ai < ATEXT.length) {
+    aEl.textContent += ATEXT[ai++];
+    setTimeout(typeAnomaly, 16 + Math.random() * 18);
+  } else {
+    aCur.style.display = 'none';
+  }
+}
+setTimeout(typeAnomaly, 1400);
+
+// ── TICKER SHIMMER ───────────────────────────────────────────────
+const TV = { bc:4247.8, mm:3891.2, uc:3124.5, ph:2156.9, sa:5089.3 };
+setInterval(() => {
+  const keys = Object.keys(TV);
+  const k = keys[Math.floor(Math.random() * keys.length)];
+  TV[k] = +(TV[k] + (Math.random()-.5)*1.6).toFixed(1);
+  document.getElementById('tv-'+k).textContent = TV[k].toLocaleString('en-US',{ minimumFractionDigits:1, maximumFractionDigits:1 });
+}, 2500);
+
+// ── CHAT ─────────────────────────────────────────────────────────
+const REPLIES = [
+  `Hedonic regression output: Photography index shows lowest beta to equities (<span class="hi">β = 0.31</span>). Optimal allocation for a 10M fund: Blue Chip <span class="hi">40%</span>, Ultra-Contemporary <span class="hi">25%</span>, Photography <span class="hi">20%</span>, Street Art <span class="hi">15%</span>. Sharpe improvement vs all-equity: <span class="hi">+0.18</span>.`,
+  `UC secondary auction volume up <span class="hi">+43%</span> YTD. Concentration risk: top 12 artists represent <span class="hi">68%</span> of index weight. Herfindahl index: <span class="hi">0.14</span>. <span class="dim">HYPOTHESIS: private market adds ~15% volume not captured in public auction data.</span>`,
+  `5Y correlation matrix — BC/MM: <span class="hi">0.71</span> · BC/UC: <span class="hi">0.44</span> · BC/PH: <span class="hi">0.38</span> · BC/SA: <span class="hi">0.29</span>. Street Art remains lowest-correlated segment, supporting satellite allocation role in institutional portfolios.`,
+  `Repeat-sales regression (RSR) confidence interval: BC ±<span class="hi">3.2%</span>, SA ±<span class="hi">7.8%</span>. Wider CI on SA driven by low repeat-sale frequency at lot level. Recommend hedonic supplement for SA sub-index. <span class="dim">HYPOTHESIS: expanding dataset by 2× would narrow CI by ~40%.</span>`,
+];
+let ri = 0;
+const msgs   = document.getElementById('msgs');
+const typing = document.getElementById('typing');
+const input  = document.getElementById('chat-input');
+
+function send() {
+  const txt = input.value.trim();
+  if (!txt) return;
+  const u = document.createElement('div');
+  u.className = 'msg u';
+  u.innerHTML = `<div class="av user">YOU</div><div class="bbl">${txt.replace(/</g,'&lt;')}</div>`;
+  msgs.insertBefore(u, typing);
+  input.value = '';
+
+  typing.style.display = 'flex';
+  msgs.scrollTop = msgs.scrollHeight;
+
+  setTimeout(() => {
+    typing.style.display = 'none';
+    const a = document.createElement('div');
+    a.className = 'msg agent';
+    a.innerHTML = `<div class="av agent">AI</div><div class="bbl">${REPLIES[ri++ % REPLIES.length]}</div>`;
+    msgs.insertBefore(a, typing);
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 1350);
+}
+
+document.getElementById('send-btn').addEventListener('click', send);
+input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+// scroll chat to bottom on load
+msgs.scrollTop = msgs.scrollHeight;
+</script>
+</body>
+</html>
