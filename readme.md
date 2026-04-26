@@ -9,6 +9,20 @@ It brings Bloomberg-style market infrastructure to fine art: segment indices, fa
 
 ---
 
+## Architecture
+
+![BART system architecture](assets/architecture.jpg)
+
+The platform is organised in five layers:
+
+- **L1 — Ingestion.** Auction records (Artnet API) and press feeds (Christie's, Sotheby's, Phillips) flow through a Python + Airflow ETL on a daily cron.
+- **L2 — Storage.** Structured records land in Supabase (PostgreSQL). Free-text and metadata are embedded with OpenAI `text-embedding-3-small` and indexed in Qdrant Cloud for semantic retrieval.
+- **L3 — Compute & AI.** A FastAPI service hosts the index engine (repeat-sales regression, hedonic regression, confidence and volatility metrics) and the agent orchestrator. Claude Sonnet 4.6 is the primary LLM with tool use over the dataset; Cerebras is wired as a streaming fallback when Claude is unreachable. Specialised agents cover research chat (RAG over Qdrant + PostgreSQL), anomaly detection, portfolio construction, data enrichment, and a 5-minute signal-watcher loop.
+- **L4 — REST API.** `/api/v1/indices`, `artworks`, `artists`, `chat` (SSE), `anomaly`, `signals`. JWT + Supabase Auth in front of the protected routes.
+- **L5 — Frontend.** Next.js 16 App Router on Vercel, Tailwind v4, shadcn/ui, Chart.js, lightweight-charts.
+
+---
+
 ## Overview
 
 The art market is a large, opaque asset class with limited real-time analytics. Investors, advisors, family offices, private banks, art funds, insurers, galleries, and auction professionals still rely heavily on fragmented reports, manual research, and expert intuition.
@@ -28,13 +42,13 @@ This project was built for the Paris Fintech Hackathon 2026 as an AI-first finte
 
 ## Features
 
-- **Home dashboard** — Daily Brief, top movers, watchlist pulse, upcoming auctions, and latest auction results.
-- **Five art market indices** — Street Art, Blue Chip, Modern Masters, Ultra-Contemporary, and Photography.
-- **Artwork analytics** — BART Score, fair value, confidence, liquidity, sale history, provenance/story enrichment, and market drivers.
-- **Artist analytics** — artist-level sales stats, sell-through, over-estimate rate, tracked corpus, and comparable artists.
-- **AI Research chat** — streamed responses, conversation history, semantic/keyword search, and tool-backed dataset answers.
+- **Home dashboard** — Daily Brief, top movers, watchlist pulse, live portfolio snapshot, upcoming auctions, and latest auction results.
+- **Five art market indices** — Street Art, Blue Chip, Modern Masters, Ultra-Contemporary, and Photography. Repeat-sales and hedonic methods, capped volatility, confidence band per segment.
+- **Artwork analytics** — BART Score, fair value, confidence, liquidity, sale history, provenance and story enrichment, market drivers, and risk block. Paginated browse with debounced search and `AbortController`-cancelled in-flight requests; the section opens directly on the Banksy hero (*Love is in the Bin*).
+- **Artist analytics** — artist-level sales stats, sell-through, over-estimate rate, dominant medium, tracked corpus, quarterly index history, and comparable artists.
+- **AI Research chat** — Claude Sonnet 4.6 with tool use, streamed token-by-token over SSE, conversation history, semantic + keyword search, and entity-token chips that link back into the terminal. Cerebras streaming fallback kicks in if Claude is unreachable before the first token.
 - **Signals feed** — proactive market monitoring with polling, filtering, and dataset-derived impact signals.
-- **Watchlist and portfolio views** — monitor tracked works, valuation movement, allocation, concentration, and liquidity.
+- **Watchlist and portfolio views** — both backed by the live `/artworks/{id}` endpoint with localStorage persistence. The portfolio donut, P&L, segment allocation, concentration, and liquidity mix are all derived from the current holdings (no hardcoded totals).
 - **Prototype surfaces** — galleries, movements, reports, and trade simulator screens for the broader product vision.
 
 ---
@@ -43,10 +57,10 @@ This project was built for the Paris Fintech Hackathon 2026 as an AI-first finte
 
 | Layer | Tech |
 |---|---|
-| Frontend | Next.js 16, React 19, Tailwind CSS, TanStack Query, Chart.js, lightweight-charts, lucide-react |
-| Backend | FastAPI, Python 3.11+, uv, SQLite, OpenAI, Qdrant, Anthropic |
+| Frontend | Next.js 16 (App Router), React 19, Tailwind v4, shadcn/ui, Chart.js, lightweight-charts, lucide-react |
+| Backend | FastAPI, Python 3.11+, uv, SQLite, Anthropic SDK, OpenAI SDK, Qdrant client |
 | Data | CSV auction dataset, enrichment JSON, SQLite conversation DB |
-| AI / Search | Claude via Anthropic, OpenAI embeddings, Qdrant vector search, keyword fallback |
+| AI / Search | Claude Sonnet 4.6 (primary, with tool use), Cerebras streaming fallback, OpenAI `text-embedding-3-small`, Qdrant vector search, keyword fallback |
 | Hosting | Vercel frontend, FastAPI backend exposed through ngrok for demo |
 
 ---
@@ -60,6 +74,7 @@ bart/
 ├── data/           Artwork CSV, auction sales CSV, enrichments, SQLite DB
 ├── docs/           Architecture notes, pitch material, flows, handoff notes
 ├── scripts/        Dataset and enrichment generation scripts
+├── assets/         Architecture schema and other static images
 └── experiments/    Prototypes and infra spikes that do not ship directly
 ```
 
@@ -77,7 +92,8 @@ Important variables:
 
 | Variable | Purpose |
 |---|---|
-| `CLAUDE_API_KEY` | Anthropic/Claude key for AI research and generated analysis |
+| `CLAUDE_API_KEY` | Anthropic/Claude key for AI research and generated analysis (primary LLM) |
+| `CEREBRA_API_KEY` | Cerebras key used as a streaming fallback when Claude is unreachable (optional) |
 | `OPENAI_API_KEY` | OpenAI key for embeddings |
 | `QDRANT_URL` | Qdrant Cloud cluster URL |
 | `QDRANT_API_KEY` | Qdrant API key |
