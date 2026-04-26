@@ -123,6 +123,29 @@ async function get<T>(path: string): Promise<T> {
   return res.json();
 }
 
+function normalizeSignals(data: Partial<Signal>[]): Signal[] {
+  const now = Date.now();
+  return data.map((signal, index) => {
+    const observedAt = signal.observed_at ?? new Date(now - index * 30_000).toISOString();
+    const fallbackId = [
+      signal.type ?? "signal",
+      signal.time ?? index,
+      signal.text ?? "",
+      signal.impact ?? "",
+    ].join("|");
+
+    return {
+      id: signal.id ?? fallbackId,
+      observed_at: observedAt,
+      time: signal.time ?? "--:--",
+      type: signal.type ?? "event",
+      text: signal.text ?? "Market signal",
+      impact: signal.impact ?? "—",
+      impactClass: signal.impactClass ?? "neutral",
+    };
+  });
+}
+
 // ─── API surface ─────────────────────────────────────────────────────────
 
 export const api = {
@@ -164,7 +187,7 @@ export const api = {
     if (params?.since) q.set("since", params.since);
     if (params?.limit) q.set("limit", String(params.limit));
     const qs = q.toString();
-    return get<Signal[]>(`/api/v1/signals${qs ? `?${qs}` : ""}`);
+    return get<Partial<Signal>[]>(`/api/v1/signals${qs ? `?${qs}` : ""}`).then(normalizeSignals);
   },
   dailyBrief: () => get<DailyBrief>(`/api/v1/daily-brief`),
 };

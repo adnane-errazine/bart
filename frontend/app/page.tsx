@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { HomePage } from "@/components/pages/HomePage";
@@ -16,11 +16,42 @@ import { PortfolioPage } from "@/components/pages/PortfolioPage";
 import { GalleriesPage } from "@/components/pages/GalleriesPage";
 import { MovementsPage } from "@/components/pages/MovementsPage";
 import { ReportsPage } from "@/components/pages/ReportsPage";
+import { api } from "@/lib/api";
 
 export default function App() {
   const [route, setRoute] = useState("home");
   const [artworkParam, setArtworkParam] = useState<string | undefined>(undefined);
   const [artistParam, setArtistParam] = useState<string | undefined>(undefined);
+  const [navBadges, setNavBadges] = useState<Record<string, string | number>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshBadges() {
+      const [signals, artists, artworks] = await Promise.allSettled([
+        api.signals({ limit: 100 }),
+        api.artists(),
+        api.artworks({ limit: 1000 }),
+      ]);
+
+      if (cancelled) return;
+
+      setNavBadges((current) => ({
+        ...current,
+        ...(signals.status === "fulfilled" ? { signals: signals.value.length } : {}),
+        ...(artists.status === "fulfilled" ? { artist: artists.value.length } : {}),
+        ...(artworks.status === "fulfilled" ? { artwork: artworks.value.length } : {}),
+      }));
+    }
+
+    refreshBadges();
+    const timer = window.setInterval(refreshBadges, 30_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   function navigate(r: string, param?: string) {
     setRoute(r);
@@ -59,7 +90,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Sidebar active={route} onNavigate={navigate} />
+      <Sidebar active={route} onNavigate={navigate} badges={navBadges} />
       <Topbar />
       <main className="main">{renderMain()}</main>
     </div>

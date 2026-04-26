@@ -7,6 +7,7 @@ type Route = string;
 interface Props {
   active: Route;
   onNavigate: (r: Route) => void;
+  badges?: Partial<Record<Route, string | number>>;
 }
 
 const NAV = [
@@ -27,7 +28,7 @@ const NAV = [
       { id: "artist", icon: Users, label: "Artists" },
       { id: "galleries", icon: Building2, label: "Galleries" },
       { id: "movements", icon: Layers, label: "Movements" },
-      { id: "signals", icon: Radio, label: "Signals", badge: "14" },
+      { id: "signals", icon: Radio, label: "Signals" },
     ],
   },
   {
@@ -40,7 +41,7 @@ const NAV = [
   },
 ];
 
-export function Sidebar({ active, onNavigate }: Props) {
+export function Sidebar({ active, onNavigate, badges = {} }: Props) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -54,6 +55,7 @@ export function Sidebar({ active, onNavigate }: Props) {
             <div className="nav-label">{section.label}</div>
             {section.items.map((item) => {
               const Icon = item.icon;
+              const badge = badges[item.id] ?? item.badge;
               return (
                 <div
                   key={item.id}
@@ -62,7 +64,7 @@ export function Sidebar({ active, onNavigate }: Props) {
                 >
                   <Icon />
                   {item.label}
-                  {item.badge && <span className="nav-item-badge">{item.badge}</span>}
+                  {badge !== undefined && <span className="nav-item-badge">{badge}</span>}
                 </div>
               );
             })}
