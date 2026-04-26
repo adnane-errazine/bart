@@ -30,6 +30,7 @@ interface Props {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const STORAGE_KEY = "bart_conversation_id";
+const NGROK_HEADERS = { "ngrok-skip-browser-warning": "true" };
 
 const TOOL_LABELS: Record<string, string> = {
   search_artworks: "Recherche œuvres",
@@ -184,7 +185,7 @@ export function ResearchPage({ onNavigate }: Props) {
   // Load conversations on mount
   const loadConversations = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/chat/conversations`);
+      const res = await fetch(`${API_URL}/api/v1/chat/conversations`, { headers: NGROK_HEADERS });
       if (res.ok) setConversations(await res.json());
     } catch { /* offline */ }
   }, []);
@@ -198,7 +199,7 @@ export function ResearchPage({ onNavigate }: Props) {
   // Load a past conversation
   async function loadConversation(id: string) {
     try {
-      const res = await fetch(`${API_URL}/api/v1/chat/conversations/${id}`);
+      const res = await fetch(`${API_URL}/api/v1/chat/conversations/${id}`, { headers: NGROK_HEADERS });
       if (!res.ok) return;
       const data = await res.json();
       const loaded: Msg[] = [GREETING];
@@ -241,7 +242,7 @@ export function ResearchPage({ onNavigate }: Props) {
     try {
       const res = await fetch(`${API_URL}/api/v1/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
         body: JSON.stringify({ message: text, conversation_id: conversationId }),
       });
 

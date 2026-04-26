@@ -113,8 +113,12 @@ export interface Enrichment {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
+const NGROK_HEADERS: Record<string, string> = {
+  "ngrok-skip-browser-warning": "true",
+};
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
+  const res = await fetch(`${BASE}${path}`, { headers: NGROK_HEADERS });
   if (!res.ok) throw new Error(`${res.status} ${path}`);
   return res.json();
 }
@@ -148,7 +152,7 @@ export const api = {
   chat: (message: string, history?: { role: string; content: string }[]) =>
     fetch(`${BASE}/api/v1/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
       body: JSON.stringify({ message, history: history ?? [] }),
     }).then((r) => r.json() as Promise<{ response: string }>),
 };
