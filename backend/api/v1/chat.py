@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel
-from db import get_db
+
 from agents import global_chat
+from services import dataset
 
 router = APIRouter(tags=["chat"])
 
 
 class HistoryMessage(BaseModel):
-    role: str     # "user" | "assistant"
+    role: str  # "user" | "assistant"
     content: str
 
 
@@ -21,8 +22,8 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest, conn=Depends(get_db)):
-    # Convert Pydantic models to plain dicts for the agent
+async def chat(req: ChatRequest):
+    ds = dataset.get()
     history = [{"role": m.role, "content": m.content} for m in req.history]
-    response = await global_chat.run(req.message, history, conn)
+    response = await global_chat.run(req.message, history, ds)
     return ChatResponse(response=response)
