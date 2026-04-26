@@ -1,101 +1,260 @@
-# BART — Art Index Terminal
+# BART — AI Art Market Analytics Terminal
 
-> The Bloomberg Terminal for the art market.
+> **Live demo:** [https://frontend-adnane-errazines-projects.vercel.app](https://frontend-adnane-errazines-projects.vercel.app)  
+> **Public API:** [https://subramous-priggishly-napoleon.ngrok-free.dev](https://subramous-priggishly-napoleon.ngrok-free.dev)
 
-BART turns a $65B/year opaque asset class into a readable, benchmarkable market for institutional finance — with proprietary indices, a trading desk simulator, and four AI agents.
+BART is an AI-powered analytics terminal for the art market.
 
----
-
-## What It Does
-
-| Layer | Description |
-|---|---|
-| **Indices** | 5 real-time sector indices built on public auction data (Blue Chip, Modern Masters, Ultra-Contemporary, Photography, Street Art) |
-| **Trading Desk** | Simulate long/short positions, run backtests, compare vs S&P 500 / Gold / Bitcoin |
-| **AI Agents** | Data enrichment, anomaly detection, portfolio construction, conversational research |
-| **B2B API** | Licensed endpoints for art funds (NAV pricing), private banks (collateral), insurers (valuation) |
+It brings Bloomberg-style market infrastructure to fine art: segment indices, fair-value analytics, portfolio and watchlist monitoring, streamed AI research, and proactive market signals built on structured auction data.
 
 ---
 
-## Stack
+## Overview
+
+The art market is a large, opaque asset class with limited real-time analytics. Investors, advisors, family offices, private banks, art funds, insurers, galleries, and auction professionals still rely heavily on fragmented reports, manual research, and expert intuition.
+
+BART turns artwork metadata and auction sales into a practical decision surface:
+
+- market indices for major art segments
+- artwork and artist analytics
+- fair-value, confidence, and liquidity metrics
+- portfolio and watchlist monitoring
+- daily market briefs and proactive signals
+- AI research over the dataset
+
+This project was built for the Paris Fintech Hackathon 2026 as an AI-first fintech prototype.
+
+---
+
+## Features
+
+- **Home dashboard** — Daily Brief, top movers, watchlist pulse, upcoming auctions, and latest auction results.
+- **Five art market indices** — Street Art, Blue Chip, Modern Masters, Ultra-Contemporary, and Photography.
+- **Artwork analytics** — BART Score, fair value, confidence, liquidity, sale history, provenance/story enrichment, and market drivers.
+- **Artist analytics** — artist-level sales stats, sell-through, over-estimate rate, tracked corpus, and comparable artists.
+- **AI Research chat** — streamed responses, conversation history, semantic/keyword search, and tool-backed dataset answers.
+- **Signals feed** — proactive market monitoring with polling, filtering, and dataset-derived impact signals.
+- **Watchlist and portfolio views** — monitor tracked works, valuation movement, allocation, concentration, and liquidity.
+- **Prototype surfaces** — galleries, movements, reports, and trade simulator screens for the broader product vision.
+
+---
+
+## Tech Stack
 
 | Layer | Tech |
 |---|---|
-| Frontend | Next.js 14 (App Router) · Tailwind CSS · shadcn/ui · Recharts |
-| Backend | FastAPI · Python · statsmodels · scikit-learn |
-| AI | Claude API — Sonnet 4.6 with function calling |
-| Database | SQLite (dev) · Supabase (prod) |
-| Deploy | Vercel (frontend) · Railway (backend) |
+| Frontend | Next.js 16, React 19, Tailwind CSS, TanStack Query, Chart.js, lightweight-charts, lucide-react |
+| Backend | FastAPI, Python 3.11+, uv, SQLite, OpenAI, Qdrant, Anthropic |
+| Data | CSV auction dataset, enrichment JSON, SQLite conversation DB |
+| AI / Search | Claude via Anthropic, OpenAI embeddings, Qdrant vector search, keyword fallback |
+| Hosting | Vercel frontend, FastAPI backend exposed through ngrok for demo |
 
 ---
 
-## Getting Started
+## Project Structure
+
+```text
+bart/
+├── frontend/       Next.js app, terminal UI, API client, page components
+├── backend/        FastAPI app, API routes, agents, dataset/search services
+├── data/           Artwork CSV, auction sales CSV, enrichments, SQLite DB
+├── docs/           Architecture notes, pitch material, flows, handoff notes
+├── scripts/        Dataset and enrichment generation scripts
+└── experiments/    Prototypes and infra spikes that do not ship directly
+```
+
+---
+
+## Environment Variables
+
+`.env.example` is the source of truth for local configuration.
+
+```bash
+cp .env.example .env
+```
+
+Important variables:
+
+| Variable | Purpose |
+|---|---|
+| `CLAUDE_API_KEY` | Anthropic/Claude key for AI research and generated analysis |
+| `OPENAI_API_KEY` | OpenAI key for embeddings |
+| `QDRANT_URL` | Qdrant Cloud cluster URL |
+| `QDRANT_API_KEY` | Qdrant API key |
+| `NGROK_AUTHTOKEN` | ngrok auth token for exposing the local backend |
+| `NEXT_PUBLIC_API_URL` | Backend URL consumed by the Next.js frontend |
+| `PUBLIC_NGROK_URL` | Public backend tunnel used for demo deployments |
+| `PUBLIC_VERCEL_URL` | Public frontend deployment URL |
+
+If Qdrant is unavailable or empty, the backend keeps running and falls back to keyword search for research queries.
+
+---
+
+## Local Development
 
 ### Prerequisites
-- Node.js 18+
+
+- Node.js 20+
 - Python 3.11+
-- An Anthropic API key
+- [uv](https://docs.astral.sh/uv/)
+- API keys listed in `.env.example` for full AI/RAG behavior
+
+### Backend
+
+```bash
+cd backend
+uv sync
+uv run uvicorn main:app --reload --port 8000
+```
+
+Backend URLs:
+
+- API: `http://localhost:8000`
+- OpenAPI docs: `http://localhost:8000/docs`
+- Health check: `http://localhost:8000/health`
 
 ### Frontend
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local   # add your API base URL
-npm run dev
+NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
 ```
 
-### Backend
+Frontend URL:
+
+- App: `http://localhost:3000`
+
+---
+
+## Build Guide
+
+### Frontend Production Build
+
+```bash
+cd frontend
+npm run build
+npm run start
+```
+
+### Backend Production-Style Run
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env          # add your Anthropic API key
-uvicorn main:app --reload
+uv run uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-The API runs at `http://localhost:8000`. Docs at `http://localhost:8000/docs`.
+### Optional Qdrant Indexing
 
----
+Run this when you want semantic search backed by Qdrant instead of keyword-only fallback:
 
-## Project Structure
-
-```
-bart/
-├── frontend/        ← Next.js app
-├── backend/         ← FastAPI + index calculation + agents
-├── data/
-│   ├── mock/        ← generated auction dataset
-│   └── static/      ← pre-calculated index JSON (demo fallback)
-├── agents/          ← AI agent prompts and logic
-├── deployment/
-│   └── web/         ← Vercel + Railway config
-└── docs/
-    ├── brainstorming.md   ← full product brief
-    └── architecture.md    ← living architecture reference
+```bash
+cd backend
+uv run python -m services.indexer
 ```
 
 ---
 
-## Index Methodology
+## Hosting / Deployment
 
-Two methodologies run in parallel for robustness:
+### Frontend on Vercel
 
-- **Repeat-Sales Regression** — tracks price changes for the same work across sales (Case-Shiller / Mei Moses method)
-- **Hedonic Regression** — controls for artwork characteristics to isolate price trends (Renneboog-Spaenjers method)
+```bash
+cd frontend
+vercel --prod
+```
 
-Data source: public auction records (~50% of total art market by value).
+Set this environment variable in Vercel:
+
+```text
+NEXT_PUBLIC_API_URL=<public backend URL>
+```
+
+Because `NEXT_PUBLIC_API_URL` is read by the frontend at build time, redeploy the frontend whenever the public backend URL changes.
+
+### Backend
+
+Run the FastAPI backend on a reachable server or expose a local instance for demos.
+
+For demo hosting with ngrok:
+
+```bash
+cd backend
+uv run uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+In another terminal:
+
+```bash
+ngrok http 8000
+```
+
+After ngrok starts:
+
+1. Update `.env` with the new public backend URL.
+2. Update Vercel `NEXT_PUBLIC_API_URL`.
+3. Redeploy the frontend if the URL changed.
 
 ---
 
-## Demo Fallback
+## API Overview
 
-`data/static/` contains pre-calculated index files. The frontend can run entirely from these with no backend — used as a safety net during live demos. Do not delete or modify these files manually.
+OpenAPI docs are available at:
+
+```text
+http://localhost:8000/docs
+```
+
+Key routes:
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/health` | Backend, dataset, and search health |
+| `GET` | `/api/v1/artworks` | List/search artworks |
+| `GET` | `/api/v1/artworks/{id}` | Artwork detail with aggregate metrics |
+| `GET` | `/api/v1/artworks/{id}/enrichment` | Pre-generated artwork story, drivers, and scoring detail |
+| `GET` | `/api/v1/artworks/{id}/sales` | Sales for one artwork |
+| `GET` | `/api/v1/sales` | Recent/global sales list |
+| `GET` | `/api/v1/artists` | List artists |
+| `GET` | `/api/v1/artists/{id}` | Artist summary and tracked works |
+| `GET` | `/api/v1/indices` | Segment index history |
+| `GET` | `/api/v1/indices/summary` | Rich segment summaries and constituents |
+| `GET` | `/api/v1/signals` | Proactive market signals |
+| `GET` | `/api/v1/daily-brief` | Home dashboard daily brief |
+| `POST` | `/api/v1/chat` | SSE-streamed AI research chat |
+
+---
+
+## Data
+
+The demo dataset is loaded into memory from local files at backend startup.
+
+Current dataset:
+
+- 1,000 artworks
+- 1,003 auction sales
+- 25 artists
+- 5 art market segments
+
+Main files:
+
+- `data/artworks.csv`
+- `data/art_auction_dataset.csv`
+- `data/enrichments.json`
+- `data/bart.db`
+
+The data is hackathon/demo-safe and designed to exercise the product workflows without requiring a live scraping pipeline.
+
+---
+
+## Business Context
+
+BART targets the missing analytics layer for art as a financial asset. The product is designed for investors, advisors, family offices, private banks, art funds, insurers, galleries, and auction houses that need structured pricing, monitoring, and research.
+
+From the project deck: estimated TAM is EUR 7.65B, SAM is EUR 765M, and near-term SOM is EUR 76.5M.
 
 ---
 
 ## Disclaimer
 
-*For informational purposes only. Not investment advice.*
+For informational purposes only. Not investment advice.
