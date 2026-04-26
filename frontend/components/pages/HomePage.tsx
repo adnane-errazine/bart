@@ -18,6 +18,18 @@ export function HomePage({ onNavigate }: Props) {
   const { rows: portfolioRows, totals: portfolioTotals, averages: portfolioAverages } = usePortfolio();
   const [brief, setBrief] = useState<DailyBrief | null>(null);
   const [briefError, setBriefError] = useState(false);
+  // Computed client-side after mount to avoid SSR/CSR hydration mismatch.
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+    const tick = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(tick);
+  }, []);
+
+  const weekday = now ? now.toLocaleDateString("en-US", { weekday: "long" }) : "";
+  const dateStr = now ? now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+  const greetingPrefix = now ? (now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening") : "Welcome";
 
   useEffect(() => {
     let cancelled = false;
@@ -47,9 +59,9 @@ export function HomePage({ onNavigate }: Props) {
       <div className="page-header">
         <div className="page-header-left">
           <div className="eyebrow">
-            Tuesday <span className="sep">/</span> Nov 11, 2025 <span className="sep">/</span> Closing 18:00 CET
+            {weekday || "—"} <span className="sep">/</span> {dateStr || "—"} <span className="sep">/</span> Closing 18:00 CET
           </div>
-          <h1 className="h1" style={{ marginTop: 6 }}>Good morning, Gabriel.</h1>
+          <h1 className="h1" style={{ marginTop: 6 }}>{greetingPrefix}, Jordan Belfort.</h1>
         </div>
         <div className="page-header-right">
           <button className="tool-btn">Export PDF</button>
