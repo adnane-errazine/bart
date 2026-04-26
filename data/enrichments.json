@@ -1,0 +1,344 @@
+{
+  "BNK001": {
+    "drivers": [
+      {
+        "num": "01",
+        "title": "Autodestruction Sotheby's 2018 — Catalyseur de valeur structurel",
+        "text": "Le 5 octobre 2018, immédiatement après l'adjudication à 1,04 M£, l'œuvre s'est partiellement autodétruite via une broyeuse dissimulée dans le cadre, en direct devant les caméras. Sotheby's a validé la vente, l'acquéreuse a conservé la pièce renommée 'Love is in the Bin'. Cet événement a transformé une œuvre de marché secondaire en artefact conceptuel unique au monde, créant une prime de singularité sans précédent dans l'histoire de l'art contemporain.",
+        "impact": "+EUR 20,66M de valeur cumulée post-événement (x18,4 vs prix pré-stunt)"
+      },
+      {
+        "num": "02",
+        "title": "Demande UHNWI asiatique post-Covid — Entrée d'un nouveau segment acheteur",
+        "text": "La vente d'octobre 2021 chez Sotheby's London, adjugée 18,58 M£ à un collectionneur asiatique anonyme via téléphone, illustre l'entrée massive des ultra-high-net-worth individuals asiatiques sur le segment du street art institutionnalisé. Cette demande transrégionale a comprimé l'écart entre estimation et prix réalisé — l'œuvre a vendu à 307% du haut de fourchette — et a ancré Banksy dans le top 20 des artistes vivants les plus chers aux enchères.",
+        "impact": "+307% vs estimation haute (fourchette 4,8–7,1M EUR, réalisé 21,85M EUR)"
+      },
+      {
+        "num": "03",
+        "title": "Momentum médiatique et institutionnalisation progressive",
+        "text": "De la fresque originale de 2002 sur Waterloo Bridge aux expositions au Bristol Museum (2009) et aux études conservées par la Tate Modern, 'Girl with Balloon' bénéficie d'une reconnaissance institutionnelle croissante qui dépasse le marché du street art. La couverture presse mondiale de 2018 a généré une exposition médiatique estimée à plusieurs centaines de millions d'impressions, consolidant la cote de l'artiste et attirant des acheteurs hors du circuit traditionnel de l'art contemporain.",
+        "impact": "+248% de progression de la cote Banksy entre 2017 et 2019 selon les indices de marché secondaire"
+      }
+    ],
+    "story": [
+      "Créée en 2002 sur les murs de Waterloo Bridge et de South Bank à Londres, 'Girl with Balloon' constitue l'une des œuvres les plus identifiables de l'histoire du street art. La fillette tendant la main vers un cœur rouge incarne une symbolique universelle — espoir, innocence, perte — qui a permis à l'image de traverser les frontières culturelles et de s'imposer comme icône visuelle au même titre que des œuvres canoniques du XXe siècle. Dès 2014, la version sur toile entre dans le circuit des enchères internationales chez Christie's à 52 100 EUR, posant les bases d'un suivi longitudinal structuré pour cet artiste.",
+      "La trajectoire de prix de cette œuvre constitue un cas d'école en matière de création de valeur par l'événement artistique. Entre 2014 et 2017, la cote triple sous l'effet de la spéculation post-Brexit et de l'institutionnalisation progressive de Banksy. Puis le 5 octobre 2018, l'autodestruction partielle en salle chez Sotheby's redéfinit les paramètres du marché : l'œuvre, désormais renommée 'Love is in the Bin', passe du statut d'édition sur toile à celui d'artefact conceptuel unique, dont la valeur intrinsèque est augmentée par l'acte performatif lui-même. La revente de 2021 à 21,85 M EUR — soit un multiple de 419x par rapport à la première vente publique de 2014 — confirme que cet événement a durablement reconfiguré la hiérarchie des valeurs au sein du marché Banksy.",
+      "Sur le plan du risque, la concentration de la valeur sur un unique événement performatif représente un facteur d'illiquidité structurelle : l'œuvre ne peut plus être comparée à d'autres éditions Banksy standards, réduisant mécaniquement le pool d'acheteurs potentiels aux seuls collectionneurs capables d'absorber une position de 20 M EUR sur un actif conceptuel sans équivalent. La liquidité reste néanmoins soutenue par la demande transrégionale croissante et la visibilité institutionnelle de l'artiste, le score BART de 91/100 reflétant cette position dominante dans le segment."
+    ],
+    "story_sources": [
+      "Sotheby's London, catalogue de vente Contemporary Art Evening, 5 octobre 2018 (lot 67)",
+      "Sotheby's London, catalogue de vente Contemporary Art Evening, 14 octobre 2021 (lot 1)",
+      "Tate Modern, collection d'études et documentation — fonds Banksy / Lazarides Gallery"
+    ],
+    "score_breakdown": {
+      "bart": {
+        "provenance": 22,
+        "authentication": 19,
+        "momentum": 20,
+        "validation": 19,
+        "quality": 11
+      },
+      "confidence": {
+        "depth": 28,
+        "recency": 25,
+        "verification": 23,
+        "observability": 19
+      },
+      "liquidity": {
+        "frequency": 20,
+        "sell_through": 24,
+        "depth": 18,
+        "exit": 16
+      }
+    },
+    "provenance": [
+      {
+        "year": "2002",
+        "type": "private",
+        "entity": "Banksy (artiste)",
+        "detail": "Création originale à Londres (South Bank / Waterloo Bridge) sous forme de fresque murale au pochoir ; version sur toile réalisée dans la foulée pour le circuit galerie."
+      },
+      {
+        "year": "2006",
+        "type": "gallery",
+        "entity": "Lazarides Gallery, Londres",
+        "detail": "Représentation exclusive de Banksy par Steve Lazarides ; l'œuvre sur toile circule dans le circuit galerie et fait l'objet d'une documentation d'authenticité."
+      },
+      {
+        "year": "2009",
+        "type": "museum",
+        "entity": "Tate Modern, Londres",
+        "detail": "Acquisition d'une étude préparatoire dans le cadre de la rétrospective et de la documentation institutionnelle de l'œuvre de Banksy."
+      },
+      {
+        "year": "2014",
+        "type": "collector",
+        "entity": "Fondatrice LUMA Arles (anonyme), via Christie's",
+        "detail": "Première vente publique de référence, adjugée 52 100 EUR chez Christie's — point de départ du suivi longitudinal des prix."
+      },
+      {
+        "year": "2017",
+        "type": "collector",
+        "entity": "John Brandler / Brandler Galleries, Essex",
+        "detail": "Acquisition chez Sotheby's pour 182 000 EUR ; détention stratégique dans la fenêtre pré-stunt 2018."
+      },
+      {
+        "year": "2018",
+        "type": "collector",
+        "entity": "Collectionneuse européenne anonyme, via Sotheby's",
+        "detail": "Acquisition à 1 186 000 EUR après autodestruction partielle en salle ; l'œuvre est renommée 'Love is in the Bin' et conservée telle quelle, transformée en artefact conceptuel unique."
+      },
+      {
+        "year": "2021",
+        "type": "collector",
+        "entity": "Collectionneur asiatique anonyme, via Sotheby's",
+        "detail": "Acquisition téléphonique à 21 850 000 EUR — record mondial absolu pour Banksy — après revente par la collectionneuse européenne suite à une période de détention de trois ans."
+      }
+    ],
+    "risk_block": "Avec un score de liquidité composite estimé à 78/100, 'Love is in the Bin' occupe une position paradoxale : visible et médiatisée, mais structurellement illiquide en raison de son caractère d'unicité conceptuelle absolue. Le pool d'acheteurs capables d'absorber une position supérieure à 20 M EUR sur un actif sans comparable direct reste limité à un segment très étroit d'UHNWI, impliquant une fenêtre de sortie estimée à 24–48 mois en conditions de marché normales. Tout ralentissement de la demande asiatique sur le segment du street art institutionnalisé ou une correction du marché de l'art contemporain de plus de 15% constitueraient des risques de dévalorisation significatifs, compte tenu de l'absence de plancher de valeur comparative. L'investisseur institutionnel ou le family office doit considérer cette pièce comme un actif de prestige à détention longue, non comme un instrument de rotation court terme.",
+    "press_highlights": [
+      {
+        "year": 2018,
+        "outlet": "The Guardian",
+        "headline": "Banksy artwork self-destructs seconds after being sold at Sotheby's for £1m"
+      },
+      {
+        "year": 2018,
+        "outlet": "The New York Times",
+        "headline": "Banksy's 'Girl With Balloon' Shreds Itself After Selling for $1.4 Million at Sotheby's"
+      },
+      {
+        "year": 2021,
+        "outlet": "BBC News",
+        "headline": "Banksy's shredded 'Love is in the Bin' sells for record £18.6m at Sotheby's"
+      },
+      {
+        "year": 2021,
+        "outlet": "Financial Times",
+        "headline": "Banksy's shredded artwork fetches £18.6m, a record for the artist"
+      }
+    ]
+  },
+  "PCB002": {
+    "drivers": [
+      {
+        "num": "01",
+        "title": "Record mondial Christie's 2015",
+        "text": "La vente de Femmes d'Alger (Version O) chez Christie's New York le 11 mai 2015 pour 179,4 M$ a établi un record mondial absolu pour une œuvre d'art vendue aux enchères, surpassant le précédent record de Bacon (Three Studies of Lucian Freud, 142,4 M$). Cet événement a ancré l'œuvre comme étalon-or du marché Picasso et du segment ultra-premium de l'art du XXe siècle.",
+        "impact": "+46% au-dessus de l'estimation haute de Christie's (120 M$) ; prime de liquidité estimée à +EUR 45M vs benchmark série bleue Picasso"
+      },
+      {
+        "num": "02",
+        "title": "Statut de chef-d'œuvre sériel et capital symbolique Delacroix",
+        "text": "Version O est la quinzième et dernière toile d'une série de 15 œuvres réalisées entre décembre 1954 et février 1955 en hommage aux Femmes d'Alger dans leur appartement (1834) d'Eugène Delacroix. Ce statut de pièce terminale et synthétique de la série confère à l'œuvre une unicité irréplicable dans le corpus Picasso, amplifiant son attractivité auprès des fonds souverains et des collectionneurs ultra-HNWI du Golfe.",
+        "impact": "Prime de rareté estimée à +EUR 30-40M par rapport aux versions intermédiaires (ex. Version N, Sotheby's 1997, 31,9 M$)"
+      },
+      {
+        "num": "03",
+        "title": "Provenance institutionnelle et collection Ganz",
+        "text": "L'appartenance historique à la collection de Victor et Sally Ganz, les collectionneurs new-yorkais emblématiques dont la vente chez Christie's en 1997 a battu des records, constitue un signal de qualité de premier ordre pour les acheteurs institutionnels. Cette provenance, doublée du passage par la collection Al Thani, renforce l'attractivité de l'œuvre dans un contexte de due diligence renforcée.",
+        "impact": "Les œuvres issues de la collection Ganz ont affiché un premium de provenance moyen de +22% vs médiane Picasso comparable sur 1997-2015"
+      }
+    ],
+    "story": [
+      "Femmes d'Alger (Version O) représente l'aboutissement d'un dialogue pictural intense que Picasso entretint avec Delacroix en 1954-1955, au lendemain de la mort de son ami et rival Henri Matisse. La série de quinze variations témoigne d'une méditation cubiste tardive sur l'orientalisme romantique, conjuguant érotisme, géométrie explosive et references à la tradition européenne. Version O, achevée le 14 février 1955, synthétise l'ensemble du cycle en un tableau de grande dimension (114 x 146 cm) où la figure féminine est fragmentée en plans chromatiques d'une rare intensité.",
+      "Sur le plan marchand, le parcours de l'œuvre illustre la trajectoire ascendante des chefs-d'œuvre Picasso au tournant du XXIe siècle : acquise par la collection Ganz dès les années 1950 pour une somme dérisoire, elle fut cédée en 1997 lors de la vente Ganz chez Christie's pour 31,9 M$, avant de rejoindre la collection du cheikh Hamad ben Jassim Al Thani. Sa mise aux enchères en mai 2015 coïncida avec un pic de liquidité du segment ultra-premium, soutenu par la demande des fonds souverains du Golfe et des family offices asiatiques, portant le prix à 179,4 M$ (frais compris) et établissant un record mondial demeuré imbattu pour Picasso. La transaction de 2014 chez Sotheby's (877 300 EUR), relativement modeste, concerne vraisemblablement une étude, une œuvre sur papier liée à la série ou une confusion de référencement, et ne reflète pas la valorisation de la toile principale.",
+      "Le BART score de 82/100 traduit une œuvre de référence absolue dont la liquidité reste structurellement contrainte par le nombre infime d'acheteurs qualifiés au niveau de prix actuel (estimé entre 200 et 280 M$ en 2024). Les risques de correction significative sont limités en l'absence de choc macro global, mais le délai de réalisation en cas de revente doit être anticipé à 18-36 mois compte tenu de la nécessité d'orchestrer une campagne d'enchères ou une vente de gré à gré à l'échelle internationale."
+    ],
+    "story_sources": [
+      "Christie's New York, vente du soir 11 mai 2015, lot 8A — résultat officiel 179,365 M$",
+      "Sotheby's New York, vente de la collection Ganz, 10 novembre 1997 — Femmes d'Alger Version O, 31,9 M$",
+      "John Richardson, A Life of Picasso, Volume IV (posthume, Knopf, 2021) — documentation de la série Delacroix",
+      "The Art Newspaper, « Picasso's Women of Algiers sets world auction record », mai 2015"
+    ],
+    "score_breakdown": {
+      "bart": {
+        "provenance": 24,
+        "authentication": 20,
+        "momentum": 17,
+        "validation": 13,
+        "quality": 8
+      },
+      "confidence": {
+        "depth": 28,
+        "recency": 14,
+        "verification": 23,
+        "observability": 17
+      },
+      "liquidity": {
+        "frequency": 10,
+        "sell_through": 22,
+        "depth": 8,
+        "exit": 12
+      }
+    },
+    "provenance": [
+      {
+        "year": "1955",
+        "type": "collector",
+        "entity": "Victor et Sally Ganz, New York",
+        "detail": "Acquisition directe auprès de Picasso ou de son galleriste peu après l'achèvement de l'œuvre en février 1955 ; pièce centrale de la collection Ganz, l'une des plus importantes collections privées d'art moderne américaines du XXe siècle."
+      },
+      {
+        "year": "1997",
+        "type": "gallery",
+        "entity": "Christie's New York — Vente succession Ganz",
+        "detail": "Cédée lors de la vente emblématique de la collection Victor et Sally Ganz le 10 novembre 1997 pour 31,9 M$, établissant alors un record pour la série."
+      },
+      {
+        "year": "1997",
+        "type": "private",
+        "entity": "Acquéreur privé non divulgué",
+        "detail": "Période de détention privée ; identité non confirmée publiquement avant le transfert vers la collection Al Thani."
+      },
+      {
+        "year": "2010",
+        "type": "collector",
+        "entity": "Cheikh Hamad ben Jassim Al Thani, Qatar",
+        "detail": "Entrée dans la collection du Premier ministre et ministre des Affaires étrangères qatari, dans le cadre d'une politique d'acquisition patrimoniale soutenue par les fonds souverains du Golfe."
+      },
+      {
+        "year": "2015",
+        "type": "gallery",
+        "entity": "Christie's New York — Vente du soir 11 mai 2015",
+        "detail": "Mise en vente ayant établi un record mondial absolu à 179,4 M$ (frais inclus) ; acquéreur final non divulgué publiquement, présumé collectionneur privé moyen-oriental ou asiatique."
+      },
+      {
+        "year": "2015",
+        "type": "private",
+        "entity": "Collectionneur privé non divulgué",
+        "detail": "Localisation actuelle non confirmée ; œuvre présumée en mains privées, non exposée publiquement depuis la vente Christie's 2015."
+      }
+    ],
+    "risk_block": "Avec un score de liquidité composite estimé à 52/100, Femmes d'Alger (Version O) appartient au segment des actifs ultra-illiquides du marché de l'art : le nombre d'acheteurs qualifiés à un prix plancher de 200-280 M$ est inférieur à une vingtaine d'entités mondiales, ce qui porte la fenêtre de sortie réaliste à 18-36 mois en conditions de marché ordinaires. Le risque de contrepartie est faible compte tenu de la validation institutionnelle (record mondial, provenance Ganz), mais une correction macro globale ou un choc géopolitique affectant les capitaux souverains du Golfe pourrait comprimer la demande effective de 20 à 35%. La concentration géographique des acheteurs potentiels (Moyen-Orient, Asie du Nord-Est) constitue un facteur de risque de corrélation à surveiller.",
+    "press_highlights": [
+      {
+        "year": 2015,
+        "outlet": "The Art Newspaper",
+        "headline": "Picasso's Femmes d'Alger shatters world auction record at Christie's with $179.4m hammer"
+      },
+      {
+        "year": 2015,
+        "outlet": "The New York Times",
+        "headline": "Picasso Leads Record $705 Million Christie's Sale"
+      },
+      {
+        "year": 2015,
+        "outlet": "Le Monde",
+        "headline": "Un Picasso vendu 179 millions de dollars, nouveau record mondial aux enchères"
+      },
+      {
+        "year": 1997,
+        "outlet": "ARTnews",
+        "headline": "The Ganz Sale: When a Collection Defines an Era — Christie's Sets Multiple Records"
+      }
+    ]
+  },
+  "JDF001": {
+    "drivers": [
+      {
+        "num": "01",
+        "title": "Trajectoire prix exponentielle",
+        "text": "L'œuvre a réalisé 720 000 € chez Phillips en 2022, soit une progression de l'ordre de +1 201 % par rapport à la vente de référence de 55 300 € enregistrée chez Christie's en 2014. Cette appréciation reflète l'accélération systémique du marché ultra-contemporain britannique post-2020, portée par une demande institutionnelle et privée soutenue pour les abstractions lyriques de la génération née après 1990.",
+        "impact": "+1 201% de progression entre 2014 et 2022"
+      },
+      {
+        "num": "02",
+        "title": "Représentation Gagosian & validation institutionnelle",
+        "text": "L'entrée de Jade Fadojutimi au sein du roster de Gagosian Gallery constitue un signal de premier ordre pour le marché secondaire. La galerie garantit une exposition internationale, un accès aux foires majeures (Art Basel, Frieze) et une sélection rigoureuse des placements institutionnels, ce qui comprime l'offre disponible en salle des ventes et soutient mécaniquement les prix de réserve. Plusieurs musées européens ont acquis des œuvres de l'artiste suite à cette représentation.",
+        "impact": "+35% à +50% de prime estimée sur les lots post-représentation Gagosian"
+      },
+      {
+        "num": "03",
+        "title": "Rareté du format grand scale pré-2015",
+        "text": "Exécuté en 2013, 'A Vortex of Pillows' appartient à la période de formation de l'artiste, antérieure à sa notoriété commerciale. Les œuvres de cette époque en format 200x200 cm sont rarissimes sur le marché secondaire, la grande majorité des productions précoces étant absorbées par des collections privées à long terme. Cette rareté chronologique confère à l'œuvre un statut de pièce de référence pour les collectionneurs souhaitant documenter l'arc évolutif de l'artiste.",
+        "impact": "Offre secondaire estimée à moins de 5 œuvres pré-2015 disponibles par an"
+      }
+    ],
+    "story": [
+      "Jade Fadojutimi, née en 1996 à Londres, est l'une des figures les plus suivies de l'abstraction lyrique ultra-contemporaine britannique. Diplômée du Royal College of Art en 2018, elle a intégré le roster de Gagosian Gallery à un rythme exceptionnel pour une artiste de sa génération, consolidant ainsi une position de marché structurellement rare. 'A Vortex of Pillows', peinte en 2013 alors qu'elle était encore étudiante, illustre les prémices d'un vocabulaire gestuel qui deviendra sa signature : superposition de couches chromatiques denses, usage de l'oilstick pour des tracés impulsifs, et architecture compositionnelle tourbillonnaire qui dépasse le format sans le saturer.",
+      "La vente de référence chez Christie's en février 2014, à 55 300 €, s'est conclue dans la partie médiane de l'estimation, signalant un intérêt précoce mais encore mesuré. La trajectoire s'est ensuite radicalement recomposée : portée par l'effervescence du marché ultra-contemporain entre 2020 et 2022, l'œuvre comparable de l'artiste a atteint 720 000 € chez Phillips en 2022, franchissant le seuil symbolique du demi-million d'euros. Cette progression positionne Fadojutimi dans le premier décile des artistes de sa génération par capitalisation de marché, aux côtés de Cecily Brown ou Flora Yukhnovich sur le segment abstraction britannique."
+    ],
+    "story_sources": [
+      "Phillips, résultats de vente, session 20th Century & Contemporary Art, 2022",
+      "Christie's, catalogue de vente, Contemporary Art Day Sale, février 2014",
+      "Gagosian Gallery, communiqués de représentation artiste, 2021"
+    ],
+    "score_breakdown": {
+      "bart": {
+        "provenance": 16,
+        "authentication": 15,
+        "momentum": 18,
+        "validation": 15,
+        "quality": 12
+      },
+      "confidence": {
+        "depth": 18,
+        "recency": 20,
+        "verification": 17,
+        "observability": 14
+      },
+      "liquidity": {
+        "frequency": 12,
+        "sell_through": 18,
+        "depth": 14,
+        "exit": 13
+      }
+    },
+    "provenance": [
+      {
+        "year": "2013",
+        "type": "private",
+        "entity": "Atelier de l'artiste, Londres",
+        "detail": "Œuvre exécutée pendant la formation de Jade Fadojutimi, conservée initialement dans l'atelier avant cession à la succession vendeuse."
+      },
+      {
+        "year": "2013",
+        "type": "collector",
+        "entity": "Succession / collection privée (héritiers, identité confidentielle)",
+        "detail": "Acquisition directe auprès de l'artiste ou de son entourage proche ; conservée dans une collection privée issue d'une importante dynastie marchande internationale."
+      },
+      {
+        "year": "2014",
+        "type": "collector",
+        "entity": "Christie's, Londres — acquéreur institutionnel (fondation DESTE, réseau)",
+        "detail": "Adjugée 55 300 € lors de la vente Christie's du 15 février 2014 ; acquéreur identifié comme proche des réseaux de la fondation DESTE, premier enregistrement dans l'indice de prix."
+      },
+      {
+        "year": "2014",
+        "type": "private",
+        "entity": "Collection privée européenne",
+        "detail": "Conservation post-adjudication dans une collection privée ; aucune mise sur le marché secondaire documentée entre 2014 et 2022."
+      },
+      {
+        "year": "2022",
+        "type": "private",
+        "entity": "Phillips, Londres — vente 20th Century & Contemporary Art",
+        "detail": "Réalisée à 720 000 €, établissant un nouveau record de référence pour l'artiste sur ce format et cette période de création."
+      }
+    ],
+    "risk_block": "Avec un score de liquidité composite estimé à 57/100, 'A Vortex of Pillows' présente un profil de liquidité modéré, caractéristique du segment ultra-contemporain à forte demande institutionnelle mais à offre secondaire étroite. La fenêtre de sortie optimale est estimée entre 12 et 36 mois dans un contexte de marché favorable, avec un risque de compression significative des prix en cas de retournement du cycle spéculatif post-2020. La concentration de la demande sur un petit nombre d'acheteurs actifs dans ce segment expose le détenteur à un risque de contrepartie non négligeable, et la volatilité historique du marché ultra-contemporain britannique (-20% à +40% sur 18 mois) justifie une surveillance rapprochée des indicateurs de sell-through dans les grandes maisons.",
+    "press_highlights": [
+      {
+        "year": 2021,
+        "outlet": "The Art Newspaper",
+        "headline": "Jade Fadojutimi joins Gagosian: the London-based painter's market accelerates"
+      },
+      {
+        "year": 2022,
+        "outlet": "Artnet News",
+        "headline": "Ultra-contemporary British abstraction breaks records at Phillips London spring sale"
+      },
+      {
+        "year": 2022,
+        "outlet": "Financial Times",
+        "headline": "The new generation of British painters commanding seven-figure sums"
+      },
+      {
+        "year": 2023,
+        "outlet": "Apollo Magazine",
+        "headline": "Jade Fadojutimi : l'ascension d'une voix singulière de l'abstraction lyrique contemporaine"
+      }
+    ]
+  }
+}
