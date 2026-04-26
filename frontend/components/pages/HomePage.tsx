@@ -1,19 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PORTFOLIO, AUCTIONS, RECENT_RESULTS } from "@/lib/data";
+import { AUCTIONS, RECENT_RESULTS } from "@/lib/data";
 
 import { fmtEur, fmtPct, deltaTri, deltaClass, synthPainting } from "@/lib/utils";
 import { Sparkline } from "@/components/Sparkline";
 import { useIndices } from "@/lib/useIndices";
 import { api, type DailyBrief } from "@/lib/api";
 import { useWatchlistArtworks } from "@/lib/watchlist";
+import { usePortfolio } from "@/lib/portfolio";
 
 interface Props { onNavigate: (route: string, param?: string) => void; }
 
 export function HomePage({ onNavigate }: Props) {
   const { indices: INDICES } = useIndices();
   const { artworks: watchlistArtworks, loading: watchlistLoading } = useWatchlistArtworks(8);
+  const { rows: portfolioRows, totals: portfolioTotals, averages: portfolioAverages } = usePortfolio();
   const [brief, setBrief] = useState<DailyBrief | null>(null);
   const [briefError, setBriefError] = useState(false);
 
@@ -120,20 +122,20 @@ export function HomePage({ onNavigate }: Props) {
           <div className="panel-body">
             <div className="metric flush">
               <div className="metric-label">TOTAL VALUE</div>
-              <div className="metric-value lg">{fmtEur(PORTFOLIO.totalValue, true)}</div>
+              <div className="metric-value lg">{fmtEur(portfolioTotals.totalValue, true)}</div>
               <div className="metric-sub">
-                <span className={`delta ${deltaClass(PORTFOLIO.pnlPct)}`}>
-                  <span className="delta-tri">{deltaTri(PORTFOLIO.pnlPct)}</span>{fmtPct(PORTFOLIO.pnlPct)}
+                <span className={`delta ${deltaClass(portfolioTotals.pnlPct)}`}>
+                  <span className="delta-tri">{deltaTri(portfolioTotals.pnlPct)}</span>{fmtPct(portfolioTotals.pnlPct)}
                 </span>
                 {" "}<span className="text-tertiary">vs cost basis</span>
               </div>
             </div>
             <div className="grid-2 mt-16">
               {[
-                { label: "P&L PROXY", val: fmtEur(PORTFOLIO.pnl, true) },
-                { label: "HOLDINGS", val: `${PORTFOLIO.holdings.length} works` },
-                { label: "CONFIDENCE AVG", val: "82" },
-                { label: "LIQUIDITY AVG", val: "61" },
+                { label: "P&L PROXY", val: fmtEur(portfolioTotals.pnl, true) },
+                { label: "HOLDINGS", val: `${portfolioRows.length} work${portfolioRows.length !== 1 ? "s" : ""}` },
+                { label: "CONFIDENCE AVG", val: portfolioAverages.confidence ? portfolioAverages.confidence.toFixed(0) : "—" },
+                { label: "LIQUIDITY AVG", val: portfolioAverages.liquidity ? portfolioAverages.liquidity.toFixed(0) : "—" },
               ].map((s) => (
                 <div key={s.label}>
                   <div className="metric-label">{s.label}</div>

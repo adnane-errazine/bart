@@ -110,25 +110,6 @@ export const ARTWORKS = [
   { id: "kaws-album", artist: "KAWS", artistId: "kaws", title: "The KAWS Album", year: 2005, medium: "Acrylic on canvas", dimensions: "101 × 101 cm", segment: "Street & Urban", bartScore: 84, fairValueMid: 13800000, confidence: 79, liquidity: 78, lastSale: { price: 14750000, venue: "Sotheby's HK 2019" } },
 ];
 
-export const PORTFOLIO = {
-  totalValue: 491208500, totalCost: 418526000, pnl: 72682500, pnlPct: 17.4,
-  holdings: [
-    { artworkId: "BNK001", title: "Love is in the Bin",                artist: "Banksy",   artistId: "ART_BNK", acquired: 1186000,   currentFV: 21850000, segment: "Street Art" },
-    { artworkId: "JDF001", title: "A Vortex of Pillows",               artist: "Jade Fadojutimi", artistId: "ART_JDF", acquired: 540000, currentFV: 720000, segment: "Ultra-Contemporary" },
-    { artworkId: "WAR001", title: "Shot Sage Blue Marilyn",            artist: "Warhol",   artistId: "ART_WAR", acquired: 175000000, currentFV: 195000000, segment: "Blue Chip" },
-    // { artworkId: "PCB002", title: "Femmes d'Alger (Version O)",        artist: "Picasso",  artistId: "ART_PCB", acquired: 158000000, currentFV: 179000000, segment: "Blue Chip" },
-    { artworkId: "GRS001", title: "Rhein II",                          artist: "Gursky",   artistId: "ART_GRS", acquired: 3800000, currentFV: 4338500, segment: "Photography" },
-    { artworkId: "HCK001", title: "Portrait of an Artist",             artist: "Hockney",  artistId: "ART_HCK", acquired: 80000000, currentFV: 90300000, segment: "Modern Masters" },
-  ],
-  allocation: [
-    { segment: "Blue Chip",          value: 374000000, pct: 76.1, color: "#6B8FB8" },
-    { segment: "Modern Masters",     value: 90300000,  pct: 18.4, color: "#8C7AAE" },
-    { segment: "Street Art",         value: 21850000,  pct: 4.4,  color: "#B8722F" },
-    { segment: "Photography",        value: 4338500,   pct: 0.9,  color: "#D4A017" },
-    { segment: "Ultra-Contemporary", value: 720000,    pct: 0.2,  color: "#4F9D69" },
-  ],
-};
-
 export const SIGNALS = [
   { time: "14:32", type: "mover", text: "Lucy Bull · Quaver Series — secondary lot adjudicated EUR 450k +18% est. Pinault provenance disclosed", impact: "+18.0%", impactClass: "up" },
   { time: "13:48", type: "fair-value", text: "Avery Singer · Fair Value revised +EUR 180k on Hauser & Wirth Basel disclosure", impact: "+24.6%", impactClass: "up" },
