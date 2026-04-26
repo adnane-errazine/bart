@@ -5,12 +5,14 @@ import { fmtEur, fmtPct, deltaClass, synthPainting } from "@/lib/utils";
 import { ScoreCircle } from "@/components/ScoreCircle";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { api, type Artwork, type Sale, type Enrichment } from "@/lib/api";
+import { useWatchlist } from "@/lib/watchlist";
 
 interface Props { artworkId?: string; onNavigate: (r: string, p?: string) => void; }
 
 const CATEGORIES = ["All", "Street Art", "Blue Chip", "Modern Masters", "Ultra-Contemporary", "Photography"];
 const PAGE_SIZE = 20;
 const SORT_OPTIONS = [
+  { value: "relevance:desc", label: "Search relevance" },
   { value: "bart_score:desc", label: "BART score" },
   { value: "bart_score:asc", label: "BART score, low first" },
   { value: "year:desc", label: "Year, newest" },
@@ -50,7 +52,11 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
 
   const fetchPage = useCallback((cat: string, q: string, sortValue: SortValue, pg: number) => {
     setLoading(true);
-    const params: Parameters<typeof api.artworks>[0] = { limit: PAGE_SIZE, offset: pg * PAGE_SIZE, ...sortParams(sortValue) };
+    const params: Parameters<typeof api.artworks>[0] = {
+      limit: PAGE_SIZE,
+      offset: pg * PAGE_SIZE,
+      ...sortParams(q.trim() ? "relevance:desc" : sortValue),
+    };
     if (cat !== "All") params.category = cat;
     if (q.trim()) params.q = q.trim();
     api.artworks(params).then((data) => {
@@ -76,7 +82,7 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
   }, [page, category, search, sort, fetchPage]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const sortLabel = SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "BART score";
+  const sortLabel = search.trim() ? "Search relevance" : SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "BART score";
 
   return (
     <div className="page">
@@ -107,8 +113,9 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
           value={sort}
           onChange={(e) => setSort(e.target.value as SortValue)}
           style={{ width: 172, padding: "4px 8px", fontSize: 11 }}
+          disabled={Boolean(search.trim())}
         >
-          {SORT_OPTIONS.map((option) => (
+          {SORT_OPTIONS.filter((option) => option.value !== "relevance:desc").map((option) => (
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
@@ -214,6 +221,7 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
   const [sales, setSales] = useState<Sale[]>([]);
   const [enrichment, setEnrichment] = useState<Enrichment | null>(null);
   const [loading, setLoading] = useState(true);
+  const { add, remove, has } = useWatchlist();
 
   useEffect(() => {
     let cancelled = false;
@@ -246,6 +254,7 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
   const provenance = enrichment?.provenance;
   const riskBlock = enrichment?.risk_block;
   const press = enrichment?.press_highlights;
+  const isWatchlisted = has(artwork.id);
 
   const salesHistory = sales.map((s) => {
     const deltaEst = s.estimate_high_eur ? Math.round((s.sale_price_eur / s.estimate_high_eur - 1) * 100) : null;
@@ -298,6 +307,15 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
             <div className="artwork-title">{artwork.title}</div>
           </div>
           <div className="caption mt-4">{artwork.medium ?? "—"}{artwork.dimensions_cm ? ` · ${artwork.dimensions_cm} cm` : ""}</div>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              className={`tool-btn${isWatchlisted ? " active" : ""}`}
+              onClick={() => isWatchlisted ? remove(artwork.id) : add(artwork.id)}
+            >
+              {isWatchlisted ? "Remove from Watchlist" : "Add to Watchlist"}
+            </button>
+            <button className="tool-btn" onClick={() => onNavigate("watchlist")}>Open Watchlist</button>
+          </div>
 
           <div className="artwork-meta-grid">
             {[

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
+from typing import Annotated
 
 from services import dataset
 
@@ -7,13 +8,13 @@ router = APIRouter(tags=["artworks"])
 
 @router.get("/artworks")
 async def list_artworks(
-    category: str | None = Query(None),
-    artist_name: str | None = Query(None),
-    q: str | None = Query(None),
-    sort_by: str = Query("bart_score", pattern="^(bart_score|year|title|artist|medium)$"),
-    sort_dir: str = Query("desc", pattern="^(asc|desc)$"),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
+    category: Annotated[str | None, Query()] = None,
+    artist_name: Annotated[str | None, Query()] = None,
+    q: Annotated[str | None, Query()] = None,
+    sort_by: Annotated[str, Query(pattern="^(relevance|bart_score|year|title|artist|medium)$")] = "bart_score",
+    sort_dir: Annotated[str, Query(pattern="^(asc|desc)$")] = "desc",
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ):
     ds = dataset.get()
     if q:
@@ -26,7 +27,9 @@ async def list_artworks(
         pool = [a for a in pool if a["artist_name"] == artist_name]
 
     descending = sort_dir == "desc"
-    if sort_by == "bart_score":
+    if sort_by == "relevance":
+        pass
+    elif sort_by == "bart_score":
         pool = sorted(
             pool,
             key=lambda a: (

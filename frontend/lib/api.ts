@@ -149,7 +149,7 @@ function normalizeSignals(data: Partial<Signal>[]): Signal[] {
 // ─── API surface ─────────────────────────────────────────────────────────
 
 export const api = {
-  artworks: (params?: { category?: string; artist_name?: string; q?: string; sort_by?: string; sort_dir?: "asc" | "desc"; limit?: number; offset?: number }) => {
+  artworks: (params?: { category?: string; artist_name?: string; q?: string; sort_by?: "relevance" | string; sort_dir?: "asc" | "desc"; limit?: number; offset?: number }) => {
     const q = new URLSearchParams();
     if (params?.category) q.set("category", params.category);
     if (params?.artist_name) q.set("artist_name", params.artist_name);

@@ -17,7 +17,7 @@ const NAV = [
       { id: "home", icon: LayoutDashboard, label: "Home" },
       { id: "markets", icon: TrendingUp, label: "Markets" },
       { id: "indices", icon: BarChart3, label: "Indices", badge: "5" },
-      { id: "watchlist", icon: Eye, label: "Watchlist", badge: "8" },
+      { id: "watchlist", icon: Eye, label: "Watchlist" },
       { id: "portfolio", icon: Briefcase, label: "Portfolio" },
     ],
   },

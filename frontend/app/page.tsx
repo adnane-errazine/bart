@@ -17,12 +17,14 @@ import { GalleriesPage } from "@/components/pages/GalleriesPage";
 import { MovementsPage } from "@/components/pages/MovementsPage";
 import { ReportsPage } from "@/components/pages/ReportsPage";
 import { api } from "@/lib/api";
+import { useWatchlist } from "@/lib/watchlist";
 
 export default function App() {
   const [route, setRoute] = useState("home");
   const [artworkParam, setArtworkParam] = useState<string | undefined>(undefined);
   const [artistParam, setArtistParam] = useState<string | undefined>(undefined);
   const [navBadges, setNavBadges] = useState<Record<string, string | number>>({});
+  const { ids: watchlistIds } = useWatchlist();
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +54,10 @@ export default function App() {
       window.clearInterval(timer);
     };
   }, []);
+
+  useEffect(() => {
+    setNavBadges((current) => ({ ...current, watchlist: watchlistIds.length }));
+  }, [watchlistIds.length]);
 
   function navigate(r: string, param?: string) {
     setRoute(r);

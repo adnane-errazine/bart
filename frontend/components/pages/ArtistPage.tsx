@@ -13,6 +13,16 @@ interface Props {
 
 const CATEGORIES = ["All", "Street Art", "Blue Chip", "Modern Masters", "Ultra-Contemporary", "Photography"];
 const PAGE_SIZE = 20;
+const SORT_OPTIONS = [
+  { value: "max_price_eur:desc", label: "Max price" },
+  { value: "median_price_eur:desc", label: "Median price" },
+  { value: "avg_price_eur:desc", label: "Avg price" },
+  { value: "sales_count:desc", label: "Sales count" },
+  { value: "artwork_count:desc", label: "Works tracked" },
+  { value: "name:asc", label: "Name A-Z" },
+] as const;
+
+type SortValue = typeof SORT_OPTIONS[number]["value"];
 
 // ─── List view ────────────────────────────────────────────────────────────────
 
@@ -20,6 +30,7 @@ function ArtistList({ onNavigate }: { onNavigate: (r: string, p?: string) => voi
   const [artists, setArtists] = useState<Artist[]>([]);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortValue>("max_price_eur:desc");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -34,6 +45,16 @@ function ArtistList({ onNavigate }: { onNavigate: (r: string, p?: string) => voi
     const matchCat = category === "All" || a.category === category;
     const matchSearch = !search.trim() || a.name.toLowerCase().includes(search.trim().toLowerCase());
     return matchCat && matchSearch;
+  }).sort((a, b) => {
+    const [field, dir] = sort.split(":") as [keyof Artist, "asc" | "desc"];
+    const av = a[field];
+    const bv = b[field];
+    if (typeof av === "string" || typeof bv === "string") {
+      return dir === "asc"
+        ? String(av).localeCompare(String(bv))
+        : String(bv).localeCompare(String(av));
+    }
+    return dir === "asc" ? Number(av) - Number(bv) : Number(bv) - Number(av);
   });
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
@@ -65,6 +86,17 @@ function ArtistList({ onNavigate }: { onNavigate: (r: string, p?: string) => voi
           onChange={(e) => handleSearch(e.target.value)}
           style={{ marginLeft: "auto", width: 180, padding: "4px 8px", background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)", fontSize: 12 }}
         />
+        <select
+          className="form-select"
+          aria-label="Sort artists"
+          value={sort}
+          onChange={(e) => { setSort(e.target.value as SortValue); setPage(0); }}
+          style={{ width: 150, padding: "4px 8px", fontSize: 11 }}
+        >
+          {SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
       </div>
 
       <div className="panel">

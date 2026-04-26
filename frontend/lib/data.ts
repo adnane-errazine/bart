@@ -110,17 +110,6 @@ export const ARTWORKS = [
   { id: "kaws-album", artist: "KAWS", artistId: "kaws", title: "The KAWS Album", year: 2005, medium: "Acrylic on canvas", dimensions: "101 × 101 cm", segment: "Street & Urban", bartScore: 84, fairValueMid: 13800000, confidence: 79, liquidity: 78, lastSale: { price: 14750000, venue: "Sotheby's HK 2019" } },
 ];
 
-export const WATCHLIST = [
-  { artworkId: "BNK001", title: "Love is in the Bin", artist: "Banksy", artistId: "ART_BNK", segment: "Street Art",       addedPrice: 1186000,   currentFV: 21850000, deltaFV: 1741.5, bartScore: 91 },
-  { artworkId: "PCB002", title: "Femmes d'Alger (Version O)",             artist: "Picasso", artistId: "ART_PCB", segment: "Blue Chip",        addedPrice: 158000000, currentFV: 179000000, deltaFV: 13.3, bartScore: 96 },
-  { artworkId: "JDF001", title: "A Vortex of Pillows",                    artist: "Jade Fadojutimi", artistId: "ART_JDF", segment: "Ultra-Contemporary", addedPrice: 540000,   currentFV: 720000,   deltaFV: 33.3, bartScore: 90 },
-  { artworkId: "WAR001", title: "Shot Sage Blue Marilyn",                 artist: "Warhol", artistId: "ART_WAR",  segment: "Blue Chip",        addedPrice: 175000000, currentFV: 195000000, deltaFV: 11.4, bartScore: 95 },
-  { artworkId: "GRS001", title: "Rhein II",                               artist: "Gursky", artistId: "ART_GRS",  segment: "Photography",      addedPrice: 4100000,   currentFV: 4338500,   deltaFV: 5.8, bartScore: 92 },
-  { artworkId: "BSQ002", title: "In This Case",                           artist: "Basquiat", artistId: "ART_BSQ", segment: "Blue Chip",        addedPrice: 80000000,  currentFV: 93100000,  deltaFV: 16.4, bartScore: 94 },
-  { artworkId: "HCK001", title: "Portrait of an Artist (Pool with Two Figures)", artist: "Hockney", artistId: "ART_HCK", segment: "Modern Masters", addedPrice: 80000000, currentFV: 90300000, deltaFV: 12.9, bartScore: 96 },
-  { artworkId: "KWS001", title: "The KAWS Album",                         artist: "KAWS", artistId: "ART_KWS",     segment: "Street Art",       addedPrice: 14750000,  currentFV: 13800000,  deltaFV: -6.4, bartScore: 84 },
-];
-
 export const PORTFOLIO = {
   totalValue: 491208500, totalCost: 418526000, pnl: 72682500, pnlPct: 17.4,
   holdings: [

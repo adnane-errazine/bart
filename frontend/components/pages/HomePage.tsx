@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WATCHLIST, PORTFOLIO, AUCTIONS, RECENT_RESULTS } from "@/lib/data";
+import { PORTFOLIO, AUCTIONS, RECENT_RESULTS } from "@/lib/data";
 
 import { fmtEur, fmtPct, deltaTri, deltaClass, synthPainting } from "@/lib/utils";
 import { Sparkline } from "@/components/Sparkline";
 import { useIndices } from "@/lib/useIndices";
 import { api, type DailyBrief } from "@/lib/api";
+import { useWatchlistArtworks } from "@/lib/watchlist";
 
 interface Props { onNavigate: (route: string, param?: string) => void; }
 
 export function HomePage({ onNavigate }: Props) {
   const { indices: INDICES } = useIndices();
+  const { artworks: watchlistArtworks, loading: watchlistLoading } = useWatchlistArtworks(8);
   const [brief, setBrief] = useState<DailyBrief | null>(null);
   const [briefError, setBriefError] = useState(false);
 
@@ -152,7 +154,7 @@ export function HomePage({ onNavigate }: Props) {
         <div className="panel">
           <div className="panel-head">
             <div className="panel-title">Watchlist Pulse</div>
-            <div className="panel-meta">8 works tracked</div>
+            <div className="panel-meta">{watchlistArtworks.length} works tracked</div>
           </div>
           <div className="panel-body flush">
             <table className="dtable">
@@ -165,27 +167,36 @@ export function HomePage({ onNavigate }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {WATCHLIST.map((w) => {
-                  const segShort = w.segment.replace("Ultra-Contemporary", "Ultra-C").replace("Modern Masters", "Modern");
+                {watchlistLoading ? (
+                  <tr><td colSpan={5} className="caption">Loading watchlist…</td></tr>
+                ) : watchlistArtworks.length === 0 ? (
+                  <tr><td colSpan={5} className="caption">No works tracked.</td></tr>
+                ) : watchlistArtworks.map((w) => {
+                  const segShort = w.category.replace("Ultra-Contemporary", "Ultra-C").replace("Modern Masters", "Modern");
+                  const fairValue = w.fair_value_mid_eur ?? w.last_sale?.price_eur ?? 0;
+                  const lastPrice = w.last_sale?.price_eur ?? 0;
+                  const delta = lastPrice > 0 && fairValue > 0 ? ((fairValue / lastPrice) - 1) * 100 : 0;
                   return (
-                    <tr key={w.artworkId} className="clickable" onClick={() => onNavigate("artwork", w.artworkId)}>
+                    <tr key={w.id} className="clickable" onClick={() => onNavigate("artwork", w.id)}>
                       <td>
                         <div className="row-icon">
-                          <div className="row-thumb" dangerouslySetInnerHTML={{ __html: synthPainting(w.artworkId.length) }} />
+                          <div className="row-thumb" dangerouslySetInnerHTML={{ __html: synthPainting(w.id.length) }} />
                           <div>
                             <div className="row-name">{w.title.slice(0, 28)}</div>
-                            <div className="row-sub">{w.artist}</div>
+                            <div className="row-sub">{w.artist_name}</div>
                           </div>
                         </div>
                       </td>
                       <td className="muted">{segShort}</td>
-                      <td className="num">{fmtEur(w.currentFV, true)}</td>
+                      <td className="num">{fairValue ? fmtEur(fairValue, true) : "—"}</td>
                       <td className="num">
-                        <span className={`delta ${deltaClass(w.deltaFV)}`}>
-                          <span className="delta-tri">{deltaTri(w.deltaFV)}</span>{fmtPct(w.deltaFV)}
-                        </span>
+                        {lastPrice > 0 && fairValue > 0 ? (
+                          <span className={`delta ${deltaClass(delta)}`}>
+                            <span className="delta-tri">{deltaTri(delta)}</span>{fmtPct(delta)}
+                          </span>
+                        ) : <span className="text-tertiary">—</span>}
                       </td>
-                      <td className="num text-amber">{w.bartScore}</td>
+                      <td className="num text-amber">{w.bart_score?.toFixed(0) ?? "—"}</td>
                     </tr>
                   );
                 })}
