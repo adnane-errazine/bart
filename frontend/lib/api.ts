@@ -126,10 +126,13 @@ async function get<T>(path: string): Promise<T> {
 // ─── API surface ─────────────────────────────────────────────────────────
 
 export const api = {
-  artworks: (params?: { category?: string; artist_name?: string; limit?: number; offset?: number }) => {
+  artworks: (params?: { category?: string; artist_name?: string; q?: string; sort_by?: string; sort_dir?: "asc" | "desc"; limit?: number; offset?: number }) => {
     const q = new URLSearchParams();
     if (params?.category) q.set("category", params.category);
     if (params?.artist_name) q.set("artist_name", params.artist_name);
+    if (params?.q) q.set("q", params.q);
+    if (params?.sort_by) q.set("sort_by", params.sort_by);
+    if (params?.sort_dir) q.set("sort_dir", params.sort_dir);
     if (params?.limit) q.set("limit", String(params.limit));
     if (params?.offset) q.set("offset", String(params.offset));
     const qs = q.toString();
@@ -156,11 +159,19 @@ export const api = {
       headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
       body: JSON.stringify({ message, history: history ?? [] }),
     }).then((r) => r.json() as Promise<{ response: string }>),
-  signals: () => get<Signal[]>(`/api/v1/signals`),
+  signals: (params?: { since?: string; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.since) q.set("since", params.since);
+    if (params?.limit) q.set("limit", String(params.limit));
+    const qs = q.toString();
+    return get<Signal[]>(`/api/v1/signals${qs ? `?${qs}` : ""}`);
+  },
   dailyBrief: () => get<DailyBrief>(`/api/v1/daily-brief`),
 };
 
 export interface Signal {
+  id: string;
+  observed_at: string;
   time: string;
   type: "mover" | "fair-value" | "event" | "alert" | "watchlist" | "confidence";
   text: string;

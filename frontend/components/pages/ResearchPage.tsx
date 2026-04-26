@@ -21,6 +21,7 @@ interface Msg {
 interface ConversationSummary {
   id: string;
   created_at: string;
+  title: string | null;
   first_message: string | null;
 }
 
@@ -75,9 +76,24 @@ function ToolTrace({ events }: { events: ToolEvent[] }) {
       if (last && !last.end) last.end = e;
     }
   }
+  const hasUsefulResult = pairs.some(
+    (p) =>
+      p.end?.summary != null &&
+      !p.end.summary.startsWith("0 résultat") &&
+      !p.end.summary.startsWith("erreur")
+  );
+  const visiblePairs = hasUsefulResult
+    ? pairs.filter(
+        (p) =>
+          !(
+            p.start.name.startsWith("search_") &&
+            p.end?.summary?.startsWith("0 résultat")
+          )
+      )
+    : pairs;
   return (
     <div className="tool-trace">
-      {pairs.map((p, i) => (
+      {visiblePairs.map((p, i) => (
         <div key={i} className={`tool-step${p.end ? " done" : " pending"}`}>
           <span className="tool-step-dot" />
           <span className="tool-step-name">{TOOL_LABELS[p.start.name] ?? p.start.name}</span>
@@ -152,7 +168,7 @@ function ConvSidebar({
           onClick={() => onSelect(c.id)}
         >
           <div className="conv-item-text">
-            {c.first_message?.slice(0, 48) ?? "Nouvelle conversation"}
+            {(c.title ?? c.first_message)?.slice(0, 48) ?? "Nouvelle conversation"}
           </div>
           <div className="conv-item-date">
             {c.created_at.slice(0, 10)}
@@ -179,7 +195,6 @@ export function ResearchPage({ onNavigate }: Props) {
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [showSidebar, setShowSidebar] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const streamingIndexRef = useRef<number>(-1);
   // Buffer for smooth streaming — flushes to state via rAF instead of every token
@@ -222,7 +237,6 @@ export function ResearchPage({ onNavigate }: Props) {
       setMessages(loaded);
       setConversationId(id);
       localStorage.setItem(STORAGE_KEY, id);
-      setShowSidebar(false);
     } catch { /* offline */ }
   }
 
@@ -230,7 +244,6 @@ export function ResearchPage({ onNavigate }: Props) {
     setMessages([GREETING]);
     setConversationId(null);
     localStorage.removeItem(STORAGE_KEY);
-    setShowSidebar(false);
   }
 
   async function send() {
@@ -352,22 +365,17 @@ export function ResearchPage({ onNavigate }: Props) {
           </div>
         </div>
         <div className="page-header-right">
-          <button className="tool-btn" onClick={() => { setShowSidebar((v) => !v); loadConversations(); }}>
-            Historique
-          </button>
           <button className="tool-btn" onClick={startNew}>Nouveau</button>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-        {showSidebar && (
-          <ConvSidebar
-            conversations={conversations}
-            activeId={conversationId}
-            onSelect={loadConversation}
-            onNew={startNew}
-          />
-        )}
+      <div className="research-layout">
+        <ConvSidebar
+          conversations={conversations}
+          activeId={conversationId}
+          onSelect={loadConversation}
+          onNew={startNew}
+        />
 
         <div className="research-chat" style={{ flex: 1 }}>
           <div style={{ flex: 1, overflowY: "auto" }}>

@@ -13,9 +13,30 @@ interface Props { onNavigate: (route: string, param?: string) => void; }
 export function HomePage({ onNavigate }: Props) {
   const { indices: INDICES } = useIndices();
   const [brief, setBrief] = useState<DailyBrief | null>(null);
+  const [briefError, setBriefError] = useState(false);
 
   useEffect(() => {
-    api.dailyBrief().then(setBrief).catch(() => null);
+    let cancelled = false;
+
+    async function refreshBrief() {
+      try {
+        const nextBrief = await api.dailyBrief();
+        if (!cancelled) {
+          setBrief(nextBrief);
+          setBriefError(false);
+        }
+      } catch {
+        if (!cancelled) setBriefError(true);
+      }
+    }
+
+    refreshBrief();
+    const timer = window.setInterval(refreshBrief, 30_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, []);
   return (
     <div className="page">
@@ -61,23 +82,27 @@ export function HomePage({ onNavigate }: Props) {
         <div className="panel">
           <div className="panel-head">
             <div className="panel-title">Daily Brief</div>
-            <div className="panel-meta">{brief ? `Mis à jour ${brief.updated_at}` : "Chargement…"}</div>
+            <div className="panel-meta">
+              {brief ? `Mis à jour ${brief.updated_at}` : briefError ? "Hors ligne" : "Chargement…"}
+            </div>
           </div>
           <div className="daily-brief">
             <div className="daily-brief-intro">
-              {brief?.intro ?? "Chargement du brief…"}
+              {briefError && !brief ? "Le brief n'est pas disponible pour le moment." : brief?.intro ?? "Chargement du brief…"}
             </div>
             {brief && brief.bullets.length > 0 && (
               <ul className="brief-bullets">
                 {brief.bullets.map((b, i) => (
                   <li key={i}>
-                    <strong>{b.artist.toUpperCase()}</strong>
-                    {" "}
-                    <span className={`delta ${b.move > 0 ? "up" : "down"}`}>
-                      {b.move > 0 ? "+" : ""}{b.move}%
+                    <span className="brief-bullet-text">
+                      <strong>{b.artist.toUpperCase()}</strong>
+                      {" "}
+                      <span className={`delta ${b.move > 0 ? "up" : "down"}`}>
+                        {b.move > 0 ? "+" : ""}{b.move}%
+                      </span>
+                      {" — "}
+                      {b.text}
                     </span>
-                    {" — "}
-                    {b.text}
                   </li>
                 ))}
               </ul>

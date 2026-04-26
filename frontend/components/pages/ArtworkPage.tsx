@@ -10,6 +10,22 @@ interface Props { artworkId?: string; onNavigate: (r: string, p?: string) => voi
 
 const CATEGORIES = ["All", "Street Art", "Blue Chip", "Modern Masters", "Ultra-Contemporary", "Photography"];
 const PAGE_SIZE = 20;
+const SORT_OPTIONS = [
+  { value: "bart_score:desc", label: "BART score" },
+  { value: "bart_score:asc", label: "BART score, low first" },
+  { value: "year:desc", label: "Year, newest" },
+  { value: "year:asc", label: "Year, oldest" },
+  { value: "title:asc", label: "Title A-Z" },
+  { value: "artist:asc", label: "Artist A-Z" },
+  { value: "medium:asc", label: "Medium A-Z" },
+] as const;
+
+type SortValue = typeof SORT_OPTIONS[number]["value"];
+
+function sortParams(sort: SortValue) {
+  const [sort_by, sort_dir] = sort.split(":") as [string, "asc" | "desc"];
+  return { sort_by, sort_dir };
+}
 
 // ─── Score badge ──────────────────────────────────────────────────────────────
 
@@ -28,14 +44,15 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
   const [total, setTotal] = useState(0);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortValue>("bart_score:desc");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const fetchPage = useCallback((cat: string, q: string, pg: number) => {
+  const fetchPage = useCallback((cat: string, q: string, sortValue: SortValue, pg: number) => {
     setLoading(true);
-    const params: Parameters<typeof api.artworks>[0] = { limit: PAGE_SIZE, offset: pg * PAGE_SIZE };
+    const params: Parameters<typeof api.artworks>[0] = { limit: PAGE_SIZE, offset: pg * PAGE_SIZE, ...sortParams(sortValue) };
     if (cat !== "All") params.category = cat;
-    if (q.trim()) params.artist_name = q.trim();
+    if (q.trim()) params.q = q.trim();
     api.artworks(params).then((data) => {
       setArtworks(data);
       setLoading(false);
@@ -46,19 +63,20 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
   useEffect(() => {
     const params: Parameters<typeof api.artworks>[0] = { limit: 1000 };
     if (category !== "All") params.category = category;
+    if (search.trim()) params.q = search.trim();
     api.artworks(params).then((all) => setTotal(all.length));
-  }, [category]);
+  }, [category, search]);
 
   useEffect(() => {
     setPage(0);
-    fetchPage(category, search, 0);
-  }, [category, search, fetchPage]);
+  }, [category, search, sort]);
 
   useEffect(() => {
-    fetchPage(category, search, page);
-  }, [page, category, search, fetchPage]);
+    fetchPage(category, search, sort, page);
+  }, [page, category, search, sort, fetchPage]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const sortLabel = SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "BART score";
 
   return (
     <div className="page">
@@ -66,7 +84,7 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
         <div className="page-header-left">
           <div className="eyebrow">Collection</div>
           <h1 className="h1" style={{ marginTop: 6 }}>Artworks</h1>
-          <div className="caption mt-4">{total} works · sorted by BART score</div>
+          <div className="caption mt-4">{total} works · sorted by {sortLabel}</div>
         </div>
       </div>
 
@@ -78,11 +96,22 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
         ))}
         <input
           type="text"
-          placeholder="Search artist…"
+          placeholder="Search artworks…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ marginLeft: "auto", width: 180, padding: "4px 8px", background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)", fontSize: 12 }}
         />
+        <select
+          className="form-select"
+          aria-label="Sort artworks"
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortValue)}
+          style={{ width: 172, padding: "4px 8px", fontSize: 11 }}
+        >
+          {SORT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
       </div>
 
       <div className="panel">

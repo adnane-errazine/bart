@@ -153,16 +153,23 @@ TOOL_DEFS = [
 async def _search_artworks_hybrid(
     ds: Dataset, query: str, category: str | None, limit: int
 ) -> list[dict]:
+    local = ds.search_artworks(query, category, limit)
     try:
         ids = await rag.search_artworks(query, category, limit)
         if ids:
-            artworks = [ds.artworks_by_id[i] for i in ids if i in ds.artworks_by_id]
-            if artworks:
-                return artworks
+            seen = {a["id"] for a in local}
+            semantic = [
+                ds.artworks_by_id[i]
+                for i in ids
+                if i in ds.artworks_by_id and i not in seen
+            ]
+            merged = [*local, *semantic]
+            if merged:
+                return merged[:limit]
     except Exception:
         pass
     # Keyword fallback
-    return ds.search_artworks(query, category, limit)
+    return local
 
 
 async def _search_artists_hybrid(
@@ -209,6 +216,9 @@ async def dispatch_tool(name: str, inputs: dict, ds: Dataset) -> str:
         else:
             result = {
                 "artwork": artwork,
+                "sale_analysis": _sale_analysis(
+                    ds.sales_by_artwork.get(artwork_id, [])
+                ),
                 "sales": [
                     _trim_sale(s)
                     for s in ds.sales_by_artwork.get(artwork_id, [])
@@ -250,6 +260,39 @@ def _trim_artwork(a: dict) -> dict:
         "medium": a["medium"],
         "bart_score": a["bart_score"],
         "description": (a["description"] or "")[:200],
+    }
+
+
+def _sale_analysis(sales: list[dict]) -> dict:
+    if not sales:
+        return {"sale_count": 0}
+
+    ordered = sorted(sales, key=lambda s: s["sale_date"])
+    first = ordered[0]
+    last = ordered[-1]
+    first_price = first["sale_price_eur"] or 0
+    last_price = last["sale_price_eur"] or 0
+    multiple = round(last_price / first_price, 2) if first_price else None
+    total_return_pct = (
+        round((last_price / first_price - 1) * 100, 1)
+        if first_price
+        else None
+    )
+    max_sale = max(ordered, key=lambda s: s["sale_price_eur"] or 0)
+    biggest_jump = max(
+        ordered[1:],
+        key=lambda s: abs(s["price_change_pct"] or 0),
+        default=None,
+    )
+
+    return {
+        "sale_count": len(ordered),
+        "first_sale": _trim_sale(first),
+        "last_sale": _trim_sale(last),
+        "max_sale": _trim_sale(max_sale),
+        "price_multiple": multiple,
+        "total_return_pct": total_return_pct,
+        "biggest_move": _trim_sale(biggest_jump) if biggest_jump else None,
     }
 
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import json
 import statistics
+import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -44,6 +45,63 @@ def _date_diff_months(d1: str, d2: str) -> int:
         return (y1 - y2) * 12 + (m1 - m2)
     except (ValueError, IndexError):
         return 0
+
+
+_SEARCH_STOPWORDS = {
+    "a",
+    "about",
+    "and",
+    "dans",
+    "de",
+    "des",
+    "du",
+    "en",
+    "est",
+    "et",
+    "for",
+    "in",
+    "is",
+    "la",
+    "le",
+    "les",
+    "of",
+    "on",
+    "pour",
+    "the",
+    "un",
+    "une",
+    "with",
+}
+
+_ARTWORK_SEARCH_ALIASES = {
+    "BNK001": [
+        "love is in the bin",
+        "love is the bin",
+        "banksy love is in the bin",
+        "banksy love is the bin",
+        "shredded balloon girl",
+        "shredded girl with balloon",
+        "banksy shredded balloon",
+        "banksy bin shredded balloon girl",
+    ],
+}
+
+
+def _normalize_search_text(text: str) -> str:
+    """Case/accent-insensitive text used by lightweight local search."""
+    normalized = unicodedata.normalize("NFKD", text or "")
+    ascii_text = "".join(c for c in normalized if not unicodedata.combining(c))
+    return " ".join(ascii_text.lower().split())
+
+
+def _query_terms(query: str) -> list[str]:
+    normalized = _normalize_search_text(query)
+    return [
+        term.strip(".,;:!?()[]{}\"'")
+        for term in normalized.split()
+        if len(term.strip(".,;:!?()[]{}\"'")) >= 3
+        and term.strip(".,;:!?()[]{}\"'") not in _SEARCH_STOPWORDS
+    ]
 
 
 def _parse_artwork(row: dict[str, str]) -> dict[str, Any]:
@@ -188,24 +246,43 @@ class Dataset:
         category: str | None = None,
         limit: int = 5,
     ) -> list[dict]:
-        """Lowercase substring match across title, artist, description, style."""
-        q = query.lower().strip()
+        """Lightweight ranked search across metadata and linked sale narratives."""
+        q = _normalize_search_text(query)
+        terms = _query_terms(query)
         pool = self.artworks_by_category.get(category, self.artworks) if category else self.artworks
         if not q:
             return pool[:limit]
         scored: list[tuple[int, dict]] = []
         for a in pool:
             score = 0
+            sale_text = " ".join(
+                filter(
+                    None,
+                    [
+                        s.get("price_change_explanation")
+                        for s in self.sales_by_artwork.get(a["id"], [])
+                    ],
+                )
+            )
             haystacks = [
                 (a["title"] or "", 4),
+                (" ".join(_ARTWORK_SEARCH_ALIASES.get(a["id"], [])), 6),
                 (a["artist_name"] or "", 3),
                 (a["artwork_style"] or "", 2),
                 (a["description"] or "", 1),
                 (a["creation_context"] or "", 1),
+                (sale_text, 2),
             ]
             for text, weight in haystacks:
-                if q in text.lower():
-                    score += weight
+                normalized = _normalize_search_text(text)
+                if q in normalized:
+                    score += weight * 8
+                if terms:
+                    matches = sum(1 for term in terms if term in normalized)
+                    if matches:
+                        score += matches * weight
+                        if matches == len(terms):
+                            score += weight * 3
             if score:
                 scored.append((score, a))
         scored.sort(key=lambda x: (-x[0], -(x[1]["bart_score"] or 0)))

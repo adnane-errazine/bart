@@ -6,7 +6,10 @@ from __future__ import annotations
 
 import hashlib
 import statistics
-from fastapi import APIRouter
+from datetime import datetime, timedelta, timezone
+from typing import Annotated
+
+from fastapi import APIRouter, Query
 from services import dataset
 
 CATEGORIES = ["Street Art", "Blue Chip", "Modern Masters", "Ultra-Contemporary", "Photography"]
@@ -30,8 +33,37 @@ def _fmt_price(eur: float) -> str:
     return f"EUR {eur:.0f}"
 
 
+def _signal_id(*parts: object) -> str:
+    raw = "|".join(str(p) for p in parts)
+    return hashlib.sha1(raw.encode()).hexdigest()[:12]
+
+
+def _is_above_estimate(sale: dict) -> bool:
+    """Prefer explicit data, then derive a usable market signal from estimates."""
+    if sale.get("sold_above_estimate"):
+        return True
+    high = sale.get("estimate_high_eur")
+    price = sale.get("sale_price_eur") or 0
+    pct = sale.get("price_change_pct")
+    return (high is not None and price > high) or (pct is not None and pct > 0)
+
+
+def _stamp_signals(signals: list[dict]) -> list[dict]:
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    for i, signal in enumerate(signals):
+        observed = now - timedelta(seconds=i * 30)
+        signal["observed_at"] = observed.isoformat().replace("+00:00", "Z")
+    return signals
+
+
 @router.get("/signals")
-async def get_signals():
+async def get_signals(
+    since: Annotated[
+        str | None,
+        Query(description="Return signals observed after this ISO timestamp."),
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 30,
+):
     ds = dataset.get()
     signals: list[dict] = []
 
@@ -52,6 +84,7 @@ async def get_signals():
 
         if pct >= 20:
             signals.append({
+                "id": _signal_id(sale["id"], "mover"),
                 "time": time,
                 "type": "mover",
                 "text": f"{artist} · {title} — {house} {price_str} · {sign}{pct:.1f}% above estimate",
@@ -61,6 +94,7 @@ async def get_signals():
             })
         elif pct <= -20:
             signals.append({
+                "id": _signal_id(sale["id"], "alert"),
                 "time": time,
                 "type": "alert",
                 "text": f"{artist} · {title} — lot underperformed {pct:.1f}% below estimate at {house}",
@@ -70,6 +104,7 @@ async def get_signals():
             })
         elif 8 <= pct < 20:
             signals.append({
+                "id": _signal_id(sale["id"], "fair-value-up"),
                 "time": time,
                 "type": "fair-value",
                 "text": f"{artist} · Fair Value revised {sign}{pct:.1f}% on {house} result — {price_str}",
@@ -79,6 +114,7 @@ async def get_signals():
             })
         elif -20 < pct <= -8:
             signals.append({
+                "id": _signal_id(sale["id"], "fair-value-down"),
                 "time": time,
                 "type": "fair-value",
                 "text": f"{artist} · Fair Value revised {pct:.1f}% — sell pressure confirmed at {house}",
@@ -93,13 +129,14 @@ async def get_signals():
         if not cat_sales:
             continue
         recent_cat = sorted(cat_sales, key=lambda s: s["sale_date"], reverse=True)[:20]
-        n_above = sum(1 for s in recent_cat if s.get("sold_above_estimate"))
+        n_above = sum(1 for s in recent_cat if _is_above_estimate(s))
         st_pct = round(100 * n_above / len(recent_cat))
         confidence = "High" if st_pct >= 75 else "Medium" if st_pct >= 50 else "Low"
         direction = "up" if st_pct >= 65 else "down"
         time = _fake_time(cat)
         latest_date = recent_cat[0]["sale_date"] if recent_cat else "2020-01-01"
         signals.append({
+            "id": _signal_id(cat, "confidence"),
             "time": time,
             "type": "confidence",
             "text": f"BART {cat.upper()} — Confidence {confidence} · {st_pct}% sell-through on trailing 20 sales",
@@ -118,6 +155,7 @@ async def get_signals():
         time = _fake_time(artwork["id"])
         score = artwork.get("bart_score") or 0
         signals.append({
+            "id": _signal_id(artwork["id"], "watchlist"),
             "time": time,
             "type": "watchlist",
             "text": (
@@ -134,7 +172,11 @@ async def get_signals():
     for s in signals:
         s.pop("_sort")
 
-    return signals[:30]
+    stamped = _stamp_signals(signals)
+    if since:
+        stamped = [s for s in stamped if s["observed_at"] > since]
+
+    return stamped[:limit]
 
 
 @router.get("/daily-brief")
@@ -171,13 +213,13 @@ async def get_daily_brief():
         if not cat_sales:
             continue
         recent_cat = sorted(cat_sales, key=lambda s: s["sale_date"], reverse=True)[:15]
-        n_above = sum(1 for s in recent_cat if s.get("sold_above_estimate"))
+        n_above = sum(1 for s in recent_cat if _is_above_estimate(s))
         st = round(100 * n_above / len(recent_cat)) if recent_cat else 0
         if st > best_st:
             best_st, best_cat = st, cat
 
     recent20 = recent[:20]
-    n_above = sum(1 for s in recent20 if s.get("sold_above_estimate"))
+    n_above = sum(1 for s in recent20 if _is_above_estimate(s))
     updated = recent[0]["sale_date"] if recent else "—"
 
     # Segment avg prices for intro context
