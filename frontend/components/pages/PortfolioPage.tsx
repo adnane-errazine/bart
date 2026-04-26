@@ -1,6 +1,6 @@
 "use client";
 
-import { PORTFOLIO, ARTWORKS } from "@/lib/data";
+import { PORTFOLIO } from "@/lib/data";
 import { fmtEur, fmtPct, deltaClass, deltaTri, synthPainting } from "@/lib/utils";
 import { ScoreCircle } from "@/components/ScoreCircle";
 
@@ -152,23 +152,20 @@ export function PortfolioPage({ onNavigate }: Props) {
               <tr>
                 <th>Work</th><th>Segment</th><th className="num">Acquired</th>
                 <th className="num">Fair Value</th><th className="num">P&amp;L</th>
-                <th className="num">Bart</th><th className="num">Liquidity</th>
               </tr>
             </thead>
             <tbody>
               {p.holdings.map((h) => {
-                const a = ARTWORKS.find((x) => x.id === h.artworkId);
-                if (!a) return null;
                 const pnl = h.currentFV - h.acquired;
                 const pnlPct = (pnl / h.acquired) * 100;
                 return (
-                  <tr key={h.artworkId} className="clickable" onClick={() => onNavigate("artwork", a.id)}>
+                  <tr key={h.artworkId} className="clickable" onClick={() => onNavigate("artwork", h.artworkId)}>
                     <td>
                       <div className="row-icon">
-                        <div className="row-thumb" dangerouslySetInnerHTML={{ __html: synthPainting(a.id.length) }} />
+                        <div className="row-thumb" dangerouslySetInnerHTML={{ __html: synthPainting(h.artworkId.length) }} />
                         <div>
-                          <div className="row-name">{a.title.slice(0, 30)}</div>
-                          <div className="row-sub">{a.artist}</div>
+                          <div className="row-name">{h.title.slice(0, 32)}</div>
+                          <div className="row-sub">{h.artist}</div>
                         </div>
                       </div>
                     </td>
@@ -176,11 +173,6 @@ export function PortfolioPage({ onNavigate }: Props) {
                     <td className="num">{fmtEur(h.acquired, true)}</td>
                     <td className="num">{fmtEur(h.currentFV, true)}</td>
                     <td className="num"><DeltaSpan pct={pnlPct} /></td>
-                    <td className="num text-amber">{a.bartScore}</td>
-                    <td className="num">
-                      <span className="inline-bar"><span className="inline-bar-fill" style={{ width: `${a.liquidity}%` }} /></span>{" "}
-                      <span className="mono">{a.liquidity}</span>
-                    </td>
                   </tr>
                 );
               })}

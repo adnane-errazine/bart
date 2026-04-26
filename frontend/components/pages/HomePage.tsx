@@ -1,12 +1,14 @@
 "use client";
 
-import { INDICES, ARTWORKS, WATCHLIST, PORTFOLIO, AUCTIONS, RECENT_RESULTS, TOP_MOVERS } from "@/lib/data";
+import { WATCHLIST, PORTFOLIO, AUCTIONS, RECENT_RESULTS, TOP_MOVERS } from "@/lib/data";
 import { fmtEur, fmtPct, deltaTri, deltaClass, synthPainting } from "@/lib/utils";
 import { Sparkline } from "@/components/Sparkline";
+import { useIndices } from "@/lib/useIndices";
 
 interface Props { onNavigate: (route: string, param?: string) => void; }
 
 export function HomePage({ onNavigate }: Props) {
+  const { indices: INDICES } = useIndices();
   return (
     <div className="page">
       <div className="page-header">
@@ -126,17 +128,15 @@ export function HomePage({ onNavigate }: Props) {
               </thead>
               <tbody>
                 {WATCHLIST.map((w) => {
-                  const a = ARTWORKS.find((x) => x.id === w.artworkId);
-                  if (!a) return null;
-                  const segShort = a.segment.replace("Ultra-Contemporary", "Ultra-C").replace("Modern Masters", "Modern").replace("Street & Urban", "Street");
+                  const segShort = w.segment.replace("Ultra-Contemporary", "Ultra-C").replace("Modern Masters", "Modern");
                   return (
-                    <tr key={w.artworkId} className="clickable" onClick={() => onNavigate("artwork", a.id)}>
+                    <tr key={w.artworkId} className="clickable" onClick={() => onNavigate("artwork", w.artworkId)}>
                       <td>
                         <div className="row-icon">
-                          <div className="row-thumb" dangerouslySetInnerHTML={{ __html: synthPainting(a.id.length) }} />
+                          <div className="row-thumb" dangerouslySetInnerHTML={{ __html: synthPainting(w.artworkId.length) }} />
                           <div>
-                            <div className="row-name">{a.title.slice(0, 28)}</div>
-                            <div className="row-sub">{a.artist}</div>
+                            <div className="row-name">{w.title.slice(0, 28)}</div>
+                            <div className="row-sub">{w.artist}</div>
                           </div>
                         </div>
                       </td>

@@ -1,45 +1,60 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { ARTISTS, ARTWORKS } from "@/lib/data";
-import { fmtEur, fmtPct, deltaClass, deltaTri, synthPainting, synthPortrait, monthlyLabels } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
+import { fmtEur, synthPainting, monthlyLabels } from "@/lib/utils";
 import { ScoreCircle } from "@/components/ScoreCircle";
-
-function DeltaSpan({ pct }: { pct: number }) {
-  return (
-    <span className={`delta ${deltaClass(pct)}`}>
-      <span className="delta-tri">{deltaTri(pct)}</span>
-      {fmtPct(pct)}
-    </span>
-  );
-}
+import { api, type ArtistSummary, type Artist } from "@/lib/api";
 
 interface Props {
   artistId?: string;
   onNavigate: (r: string, param?: string) => void;
 }
 
-export function ArtistPage({ artistId = "lucy-bull", onNavigate }: Props) {
-  const artist = ARTISTS.find((a) => a.id === artistId) || ARTISTS[0];
-  const works = ARTWORKS.filter((w) => w.artistId === artist.id);
-  const peers = ARTISTS.filter((a) => a.segment === artist.segment && a.id !== artist.id).slice(0, 4);
+const DEFAULT_ARTIST_ID = "ART_BNK";
+
+export function ArtistPage({ artistId, onNavigate }: Props) {
+  const id = artistId ?? DEFAULT_ARTIST_ID;
+  const [artist, setArtist] = useState<ArtistSummary | null>(null);
+  const [peers, setPeers] = useState<Artist[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<unknown>(null);
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([api.artist(id), api.artists()]).then(([a, all]) => {
+      if (cancelled) return;
+      setArtist(a);
+      setPeers(all.filter((p) => p.category === a.category && p.id !== a.id).slice(0, 4));
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [id]);
+
+  useEffect(() => {
+    if (!chartRef.current || !artist || artist.index_history.length === 0) return;
     const initChart = async () => {
       const { Chart, CategoryScale, LinearScale, PointElement, LineElement, Tooltip } = await import("chart.js");
       Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
       if (chartInstance.current) (chartInstance.current as { destroy: () => void }).destroy();
       const getCssVar = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-      const labels = monthlyLabels(120);
+      const labels = artist.index_history.map((p) => p.date);
       chartInstance.current = new Chart(chartRef.current!, {
         type: "line",
         data: {
           labels,
-          datasets: [{ label: artist.name, data: artist.indexHistory, borderColor: getCssVar("--accent-amber"), backgroundColor: "transparent", borderWidth: 1.6, tension: 0.05, pointRadius: 0, pointHoverRadius: 4 }],
+          datasets: [{
+            label: artist.name,
+            data: artist.index_history.map((p) => p.value),
+            borderColor: getCssVar("--accent-amber"),
+            backgroundColor: "transparent",
+            borderWidth: 1.6,
+            tension: 0.05,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+          }],
         },
         options: {
           responsive: true, maintainAspectRatio: false, animation: false,
@@ -57,15 +72,19 @@ export function ArtistPage({ artistId = "lucy-bull", onNavigate }: Props) {
     };
     initChart();
     return () => { if (chartInstance.current) (chartInstance.current as { destroy: () => void }).destroy(); };
-  }, [artistId, artist]);
+  }, [artist]);
+
+  if (loading || !artist) {
+    return <div className="page"><div className="caption">Loading artist…</div></div>;
+  }
 
   return (
     <div className="page">
       <div className="page-header">
         <div className="page-header-left">
-          <div className="eyebrow">Artists <span className="sep">/</span> {artist.segment} <span className="sep">/</span> {artist.nationality}</div>
+          <div className="eyebrow">Artists <span className="sep">/</span> {artist.category}</div>
           <h1 className="h1 serif" style={{ marginTop: 6 }}>{artist.name}</h1>
-          <div className="caption mt-4">b. {artist.born} · {artist.nationality} · {artist.based}</div>
+          <div className="caption mt-4">{artist.artwork_count} works tracked · {artist.sales_count} sales on record</div>
         </div>
         <div className="page-header-right">
           <button className="tool-btn">Watchlist</button>
@@ -74,27 +93,30 @@ export function ArtistPage({ artistId = "lucy-bull", onNavigate }: Props) {
       </div>
 
       <div className="signature-metrics mb-24">
-        <div className="sig-cell score"><ScoreCircle value={artist.bartScore} max={100} label="BART SCORE ARTIST" /></div>
+        <div className="sig-cell score"><ScoreCircle value={artist.bart_score} max={100} label="AVG WORK SCORE" /></div>
         <div className="sig-cell">
           <div className="metric-label">AUCTIONS 5Y</div>
-          <div className="metric-value">{artist.auctions5y}</div>
+          <div className="metric-value">{artist.auctions_5y}</div>
           <div className="metric-sub">lots adjudicated</div>
         </div>
         <div className="sig-cell">
           <div className="metric-label">SELL-THROUGH</div>
-          <div className="metric-value">{artist.sellThrough}<span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>%</span></div>
-          <div className="metric-sub">vs {artist.sellThrough - 18}% segment avg</div>
+          <div className="metric-value">{artist.sell_through_pct}<span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>%</span></div>
+          <div className="metric-sub">lots sold above estimate</div>
         </div>
         <div className="sig-cell">
           <div className="metric-label">AVG OVER ESTIMATE</div>
-          <div className="metric-value">+{artist.overEst}<span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>%</span></div>
-          <div className="metric-sub">trailing 12M</div>
+          <div className="metric-value">+{artist.over_estimate_pct}<span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>%</span></div>
+          <div className="metric-sub">when above (12M)</div>
         </div>
       </div>
 
       <div className="grid-2-1 mb-24">
         <div className="panel">
-          <div className="panel-head"><div className="panel-title">Artist Index · 10Y</div><div className="panel-meta">Personal repeat-sales · base 100 Jan 2015</div></div>
+          <div className="panel-head">
+            <div className="panel-title">Artist Index</div>
+            <div className="panel-meta">Median quarterly price · base 100</div>
+          </div>
           <div className="panel-body">
             <div style={{ position: "relative", height: 280 }}>
               <canvas ref={chartRef} />
@@ -102,67 +124,45 @@ export function ArtistPage({ artistId = "lucy-bull", onNavigate }: Props) {
           </div>
         </div>
         <div className="panel">
-          <div className="panel-head"><div className="panel-title">Biography</div></div>
+          <div className="panel-head"><div className="panel-title">Profile</div></div>
           <div className="panel-body">
-            <div style={{ fontFamily: "var(--font-serif)", fontSize: 13.5, lineHeight: 1.55, color: "var(--text-primary)" }}>{artist.bio}</div>
-            <div className="mt-16">
-              <div className="metric-label">REPRESENTED BY</div>
-              <div className="mono mt-4" style={{ fontSize: 11 }}>{artist.galleries.join(" · ")}</div>
-            </div>
-            <div className="mt-16">
-              <div className="metric-label">DOMINANT MEDIUM</div>
-              <div style={{ fontSize: 12, marginTop: 4 }}>{artist.dominantMedium}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid-2-1 mb-24">
-        <div className="panel">
-          <div className="panel-head"><div className="panel-title">Tracked Corpus</div><div className="panel-meta">{works.length} works</div></div>
-          <div className="panel-body">
-            {works.length > 0 ? (
-              <div className="artist-other-works">
-                {works.map((w) => (
-                  <div key={w.id} className="other-work" onClick={() => onNavigate("artwork", w.id)}>
-                    <div className="other-work-img" dangerouslySetInnerHTML={{ __html: synthPainting(w.id.length * 5) }} />
-                    <div className="other-work-meta">
-                      <div className="row-name">{w.title.slice(0, 28)}</div>
-                      <div>{w.year}</div>
-                      <div className="other-work-price">{fmtEur(w.fairValueMid, true)}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="caption">No tracked works yet.</div>
-            )}
-          </div>
-        </div>
-        <div className="panel">
-          <div className="panel-head"><div className="panel-title">Press &amp; Institutional Timeline</div></div>
-          <div className="panel-body" style={{ padding: "8px 18px" }}>
-            {(artist.pressTimeline || []).map((p, i) => (
-              <div key={i} className="prov-item">
-                <div className="prov-year">{p.year}</div>
-                <div className="prov-marker museum" />
-                <div className="prov-body"><div className="prov-entity">{p.event}</div></div>
-              </div>
-            ))}
+            <div className="form-row"><span style={{ color: "var(--text-tertiary)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Segment</span><span>{artist.category}</span></div>
+            <div className="form-row"><span style={{ color: "var(--text-tertiary)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Dominant Medium</span><span>{artist.dominant_medium ?? "—"}</span></div>
+            <div className="form-row"><span style={{ color: "var(--text-tertiary)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Median Price</span><span className="mono">{fmtEur(artist.median_price_eur, true)}</span></div>
+            <div className="form-row"><span style={{ color: "var(--text-tertiary)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Max Price</span><span className="mono">{fmtEur(artist.max_price_eur, true)}</span></div>
+            <div className="form-row"><span style={{ color: "var(--text-tertiary)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Avg Price</span><span className="mono">{fmtEur(artist.avg_price_eur, true)}</span></div>
           </div>
         </div>
       </div>
 
       <div className="section">
         <div className="section-header">
-          <div className="section-header-left"><div className="h2">Comparable Artists</div></div>
+          <div className="section-header-left"><div className="h2">Tracked Corpus · {artist.artworks.length} works</div></div>
+        </div>
+        <div className="artist-other-works" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
+          {artist.artworks.slice(0, 18).map((w) => (
+            <div key={w.id} className="other-work" onClick={() => onNavigate("artwork", w.id)}>
+              <div className="other-work-img" dangerouslySetInnerHTML={{ __html: synthPainting(w.id.length * 5) }} />
+              <div className="other-work-meta">
+                <div className="row-name">{(w.title ?? "").slice(0, 28)}</div>
+                <div>{w.year_created ?? "—"}</div>
+                <div className="other-work-price mono text-amber">BART {w.bart_score ?? "—"}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="section">
+        <div className="section-header">
+          <div className="section-header-left"><div className="h2">Comparable Artists · {artist.category}</div></div>
         </div>
         <div className="peer-grid">
           {peers.map((p) => (
             <div key={p.id} className="peer-card" onClick={() => onNavigate("artist", p.id)}>
               <div className="peer-name">{p.name}</div>
-              <div className="peer-meta">b.{p.born} · {p.nationality}</div>
-              <div className="peer-score">{p.bartScore}<span style={{ fontSize: 11, color: "var(--text-tertiary)" }}> / 100</span></div>
+              <div className="peer-meta">{p.artwork_count} works · {p.sales_count} sales</div>
+              <div className="peer-score">{fmtEur(p.median_price_eur, true)}<span style={{ fontSize: 11, color: "var(--text-tertiary)" }}> median</span></div>
             </div>
           ))}
         </div>

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { INDICES } from "@/lib/data";
 import { fmtPct, deltaClass, deltaTri, synthSeries, monthlyLabels } from "@/lib/utils";
-import { ScoreCircle } from "@/components/ScoreCircle";
 import { Sparkline } from "@/components/Sparkline";
+import { useIndices } from "@/lib/useIndices";
 
 function scoreDots(score: number) {
   const filled = Math.round((score / 100) * 10);
@@ -28,14 +27,15 @@ function DeltaSpan({ pct }: { pct: number }) {
 }
 
 export function MarketsPage() {
+  const { indices: INDICES, loading } = useIndices();
   const [activeId, setActiveId] = useState("ultra");
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<unknown>(null);
 
-  const index = INDICES.find((x) => x.id === activeId) || INDICES[2];
+  const index = INDICES.find((x) => x.id === activeId) || INDICES[0];
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || !index) return;
 
     const initChart = async () => {
       const { Chart, CategoryScale, LinearScale, PointElement, LineElement, Tooltip } = await import("chart.js");
@@ -89,6 +89,10 @@ export function MarketsPage() {
     initChart();
     return () => { if (chartInstance.current) (chartInstance.current as { destroy: () => void }).destroy(); };
   }, [activeId, index]);
+
+  if (loading || !index) {
+    return <div className="page"><div className="caption">Loading indices…</div></div>;
+  }
 
   return (
     <div className="page">

@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { INDICES } from "@/lib/data";
 import { fmtPct, deltaTri, deltaClass } from "@/lib/utils";
 import { Sparkline } from "@/components/Sparkline";
+import { useIndices } from "@/lib/useIndices";
 
 export function IndicesPage() {
-  const [selected, setSelected] = useState(INDICES[0].id);
-  const idx = INDICES.find((i) => i.id === selected) ?? INDICES[0];
+  const { indices: INDICES, loading } = useIndices();
+  const [selected, setSelected] = useState<string | null>(null);
+
+  if (loading || INDICES.length === 0) {
+    return <div className="page"><div className="caption">Loading indices…</div></div>;
+  }
+
+  const idx = INDICES.find((i) => i.id === (selected ?? INDICES[0].id)) ?? INDICES[0];
 
   return (
     <div className="page">

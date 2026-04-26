@@ -111,32 +111,32 @@ export const ARTWORKS = [
 ];
 
 export const WATCHLIST = [
-  { artworkId: "bull-quaver-2022", addedPrice: 380000, currentFV: 465000, deltaFV: 22.4, bartScore: 84 },
-  { artworkId: "singer-2023", addedPrice: 880000, currentFV: 920000, deltaFV: 4.5, bartScore: 88 },
-  { artworkId: "quarles-2022", addedPrice: 1380000, currentFV: 1450000, deltaFV: 5.1, bartScore: 91 },
-  { artworkId: "fadojutimi-2023", addedPrice: 540000, currentFV: 680000, deltaFV: 25.9, bartScore: 84 },
-  { artworkId: "kusama-pumpkin", addedPrice: 4100000, currentFV: 4200000, deltaFV: 2.4, bartScore: 91 },
-  { artworkId: "gursky-rhein", addedPrice: 4338500, currentFV: 4100000, deltaFV: -5.5, bartScore: 92 },
-  { artworkId: "banksy-balloon", addedPrice: 22600000, currentFV: 22400000, deltaFV: -0.9, bartScore: 89 },
-  { artworkId: "kaws-album", addedPrice: 14750000, currentFV: 13800000, deltaFV: -6.4, bartScore: 84 },
+  { artworkId: "BNK001", title: "Girl with Balloon → Love is in the Bin", artist: "Banksy", artistId: "ART_BNK", segment: "Street Art",       addedPrice: 1186000,   currentFV: 21850000, deltaFV: 1741.5, bartScore: 91 },
+  { artworkId: "PCB002", title: "Femmes d'Alger (Version O)",             artist: "Picasso", artistId: "ART_PCB", segment: "Blue Chip",        addedPrice: 158000000, currentFV: 179000000, deltaFV: 13.3, bartScore: 96 },
+  { artworkId: "JDF001", title: "A Vortex of Pillows",                    artist: "Jade Fadojutimi", artistId: "ART_JDF", segment: "Ultra-Contemporary", addedPrice: 540000,   currentFV: 720000,   deltaFV: 33.3, bartScore: 90 },
+  { artworkId: "WAR001", title: "Shot Sage Blue Marilyn",                 artist: "Warhol", artistId: "ART_WAR",  segment: "Blue Chip",        addedPrice: 175000000, currentFV: 195000000, deltaFV: 11.4, bartScore: 95 },
+  { artworkId: "GRS001", title: "Rhein II",                               artist: "Gursky", artistId: "ART_GRS",  segment: "Photography",      addedPrice: 4100000,   currentFV: 4338500,   deltaFV: 5.8, bartScore: 92 },
+  { artworkId: "BSQ002", title: "In This Case",                           artist: "Basquiat", artistId: "ART_BSQ", segment: "Blue Chip",        addedPrice: 80000000,  currentFV: 93100000,  deltaFV: 16.4, bartScore: 94 },
+  { artworkId: "HCK001", title: "Portrait of an Artist (Pool with Two Figures)", artist: "Hockney", artistId: "ART_HCK", segment: "Modern Masters", addedPrice: 80000000, currentFV: 90300000, deltaFV: 12.9, bartScore: 96 },
+  { artworkId: "KWS001", title: "The KAWS Album",                         artist: "KAWS", artistId: "ART_KWS",     segment: "Street Art",       addedPrice: 14750000,  currentFV: 13800000,  deltaFV: -6.4, bartScore: 84 },
 ];
 
 export const PORTFOLIO = {
-  totalValue: 12480000, totalCost: 9820000, pnl: 2660000, pnlPct: 27.1,
+  totalValue: 491208500, totalCost: 418526000, pnl: 72682500, pnlPct: 17.4,
   holdings: [
-    { artworkId: "bull-quaver-2022", acquired: 380000, currentFV: 465000, segment: "Ultra-Contemporary" },
-    { artworkId: "fadojutimi-2023", acquired: 540000, currentFV: 680000, segment: "Ultra-Contemporary" },
-    { artworkId: "singer-2023", acquired: 880000, currentFV: 920000, segment: "Ultra-Contemporary" },
-    { artworkId: "kusama-pumpkin", acquired: 4100000, currentFV: 4200000, segment: "Modern Masters" },
-    { artworkId: "gursky-rhein", acquired: 3800000, currentFV: 4100000, segment: "Photography" },
-    { artworkId: "kaws-album", acquired: 120000, currentFV: 1380000, segment: "Street & Urban" },
+    { artworkId: "BNK001", title: "Love is in the Bin",                artist: "Banksy",   artistId: "ART_BNK", acquired: 1186000,   currentFV: 21850000, segment: "Street Art" },
+    { artworkId: "JDF001", title: "A Vortex of Pillows",               artist: "Jade Fadojutimi", artistId: "ART_JDF", acquired: 540000, currentFV: 720000, segment: "Ultra-Contemporary" },
+    { artworkId: "WAR001", title: "Shot Sage Blue Marilyn",            artist: "Warhol",   artistId: "ART_WAR", acquired: 175000000, currentFV: 195000000, segment: "Blue Chip" },
+    { artworkId: "PCB002", title: "Femmes d'Alger (Version O)",        artist: "Picasso",  artistId: "ART_PCB", acquired: 158000000, currentFV: 179000000, segment: "Blue Chip" },
+    { artworkId: "GRS001", title: "Rhein II",                          artist: "Gursky",   artistId: "ART_GRS", acquired: 3800000, currentFV: 4338500, segment: "Photography" },
+    { artworkId: "HCK001", title: "Portrait of an Artist",             artist: "Hockney",  artistId: "ART_HCK", acquired: 80000000, currentFV: 90300000, segment: "Modern Masters" },
   ],
   allocation: [
-    { segment: "Ultra-Contemporary", value: 2065000, pct: 16.5, color: "#D4A017" },
-    { segment: "Modern Masters", value: 4200000, pct: 33.7, color: "#6B8FB8" },
-    { segment: "Photography", value: 4100000, pct: 32.9, color: "#8C7AAE" },
-    { segment: "Street & Urban", value: 1380000, pct: 11.0, color: "#B8722F" },
-    { segment: "Cash / Reserve", value: 735000, pct: 5.9, color: "#4F9D69" },
+    { segment: "Blue Chip",          value: 374000000, pct: 76.1, color: "#6B8FB8" },
+    { segment: "Modern Masters",     value: 90300000,  pct: 18.4, color: "#8C7AAE" },
+    { segment: "Street Art",         value: 21850000,  pct: 4.4,  color: "#B8722F" },
+    { segment: "Photography",        value: 4338500,   pct: 0.9,  color: "#D4A017" },
+    { segment: "Ultra-Contemporary", value: 720000,    pct: 0.2,  color: "#4F9D69" },
   ],
 };
 
