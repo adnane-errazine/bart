@@ -15,9 +15,13 @@ import os
 from typing import AsyncGenerator
 
 import anthropic
+from openai import AsyncOpenAI
 
 from agents.tools import TOOL_DEFS, dispatch_tool
 from services.dataset import Dataset
+
+CEREBRAS_BASE_URL = "https://api.cerebras.ai/v1"
+CEREBRAS_MODEL = "llama3.1-8b"
 
 SYSTEM = """You are BART — an institutional research assistant for the fine art market. Reply in \
 the same language as the user's message (default French if ambiguous).
@@ -89,6 +93,34 @@ def _tool_summary(name: str, result_json: str) -> str:
     return "ok"
 
 
+async def _stream_cerebras_fallback(
+    message: str,
+    history: list[dict],
+) -> AsyncGenerator[dict, None]:
+    """Plain narrative answer via Cerebras (no tool use). Used when Claude is unavailable."""
+    client = AsyncOpenAI(
+        base_url=CEREBRAS_BASE_URL,
+        api_key=os.environ["CEREBRA_API_KEY"],
+    )
+    messages = (
+        [{"role": "system", "content": SYSTEM}]
+        + [{"role": h["role"], "content": h["content"]} for h in history if isinstance(h.get("content"), str)]
+        + [{"role": "user", "content": message}]
+    )
+    stream = await client.chat.completions.create(
+        model=CEREBRAS_MODEL,
+        messages=messages,
+        max_tokens=2048,
+        stream=True,
+    )
+    async for chunk in stream:
+        if not chunk.choices:
+            continue
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield {"type": "text_delta", "text": delta}
+
+
 async def stream(
     message: str,
     history: list[dict],
@@ -100,45 +132,61 @@ async def stream(
     """
     client = anthropic.AsyncAnthropic(api_key=os.environ["CLAUDE_API_KEY"])
     messages: list[dict] = list(history) + [{"role": "user", "content": message}]
+    yielded_text = False
 
-    while True:
-        # ── Stream one Claude response ────────────────────────────────────
-        async with client.messages.stream(
-            model="claude-sonnet-4-6",
-            max_tokens=2048,
-            system=SYSTEM,
-            tools=TOOL_DEFS,
-            messages=messages,
-        ) as s:
-            async for text in s.text_stream:
-                yield {"type": "text_delta", "text": text}
-            final = await s.get_final_message()
+    try:
+        while True:
+            # ── Stream one Claude response ────────────────────────────────────
+            async with client.messages.stream(
+                model="claude-sonnet-4-6",
+                max_tokens=2048,
+                system=SYSTEM,
+                tools=TOOL_DEFS,
+                messages=messages,
+            ) as s:
+                async for text in s.text_stream:
+                    yielded_text = True
+                    yield {"type": "text_delta", "text": text}
+                final = await s.get_final_message()
 
-        if final.stop_reason != "tool_use":
-            break
+            if final.stop_reason != "tool_use":
+                break
 
-        # ── Execute tool calls and yield trace events ─────────────────────
-        tool_use_blocks = [b for b in final.content if b.type == "tool_use"]
-        tool_results = []
+            # ── Execute tool calls and yield trace events ─────────────────────
+            tool_use_blocks = [b for b in final.content if b.type == "tool_use"]
+            tool_results = []
 
-        for block in tool_use_blocks:
-            yield {"type": "tool_start", "name": block.name, "input": block.input}
+            for block in tool_use_blocks:
+                yield {"type": "tool_start", "name": block.name, "input": block.input}
 
-            result_json = await dispatch_tool(block.name, block.input, ds)
+                result_json = await dispatch_tool(block.name, block.input, ds)
 
+                yield {
+                    "type": "tool_end",
+                    "name": block.name,
+                    "summary": _tool_summary(block.name, result_json),
+                }
+
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result_json,
+                })
+
+            messages.append({"role": "assistant", "content": _blocks_to_dicts(final.content)})
+            messages.append({"role": "user", "content": tool_results})
+    except Exception as claude_err:
+        if yielded_text or not os.environ.get("CEREBRA_API_KEY"):
+            raise
+        # Claude unreachable before any output — fall back to Cerebras (no tool use).
+        print(f"[chat] Claude failed ({type(claude_err).__name__}: {claude_err}), falling back to Cerebras")
+        try:
+            async for event in _stream_cerebras_fallback(message, history):
+                yield event
+        except Exception as cerebras_err:
             yield {
-                "type": "tool_end",
-                "name": block.name,
-                "summary": _tool_summary(block.name, result_json),
+                "type": "text_delta",
+                "text": f"[Service indisponible — Claude: {type(claude_err).__name__}; Cerebras: {type(cerebras_err).__name__}]",
             }
-
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": block.id,
-                "content": result_json,
-            })
-
-        messages.append({"role": "assistant", "content": _blocks_to_dicts(final.content)})
-        messages.append({"role": "user", "content": tool_results})
 
     yield {"type": "done"}
