@@ -1,9 +1,23 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { fmtPct, deltaClass, deltaTri, synthSeries, monthlyLabels } from "@/lib/utils";
+import { fmtPct, deltaClass, deltaTri } from "@/lib/utils";
 import { Sparkline } from "@/components/Sparkline";
 import { useIndices } from "@/lib/useIndices";
+
+// Build a comparable benchmark series of `n` quarterly points growing from 100 to `endValue`,
+// with a deterministic sinusoidal jitter for realism.
+function benchmarkSeries(endValue: number, n: number, vol: number, seed: number): number[] {
+  if (n < 2) return [100];
+  const out = [100];
+  const r = (endValue / 100) ** (1 / (n - 1)) - 1;
+  for (let i = 1; i < n; i++) {
+    const shock = (Math.sin((i + seed) * 0.7) + Math.cos((i + seed) * 1.3)) * vol * 0.01;
+    out.push(out[i - 1] * (1 + r + shock));
+  }
+  out[n - 1] = endValue;
+  return out.map((v) => +v.toFixed(2));
+}
 
 function scoreDots(score: number) {
   const filled = Math.round((score / 100) * 10);
@@ -38,8 +52,8 @@ export function MarketsPage() {
     if (!chartRef.current || !index) return;
 
     const initChart = async () => {
-      const { Chart, CategoryScale, LinearScale, PointElement, LineElement, Tooltip } = await import("chart.js");
-      Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
+      const { Chart, CategoryScale, LinearScale, PointElement, LineElement, LineController, Tooltip } = await import("chart.js");
+      Chart.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Tooltip);
 
       if (chartInstance.current) {
         (chartInstance.current as { destroy: () => void }).destroy();
@@ -47,12 +61,20 @@ export function MarketsPage() {
 
       const getCssVar = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-      const labels = monthlyLabels(60);
-      const base = index.history5y[0];
-      const rebased = index.history5y.map((v) => +(v / base * 100).toFixed(2));
-      const sp500 = synthSeries(100, 178, 60, 8);
-      const gold = synthSeries(100, 145, 60, 6);
-      const btc = synthSeries(100, 320, 60, 25);
+      const points = index.history5y;
+      const n = points.length;
+      // Q1, Q2, Q3, Q4 labels — show year on Q1 only
+      const labels = points.map((_, i) => {
+        const startYear = new Date().getFullYear() - Math.ceil(n / 4);
+        const q = i % 4;
+        const y = startYear + Math.floor(i / 4);
+        return q === 0 ? `${y}` : `Q${q + 1}`;
+      });
+      const base = points[0];
+      const rebased = points.map((v) => +(v / base * 100).toFixed(2));
+      const sp500 = benchmarkSeries(178, n, 8, 1);
+      const gold = benchmarkSeries(145, n, 5, 7);
+      const btc = benchmarkSeries(320, n, 22, 13);
 
       chartInstance.current = new Chart(chartRef.current!, {
         type: "line",

@@ -114,8 +114,8 @@ function ArtistDetail({ artistId, onNavigate }: { artistId: string; onNavigate: 
   useEffect(() => {
     if (!chartRef.current || !artist || artist.index_history.length === 0) return;
     const initChart = async () => {
-      const { Chart, CategoryScale, LinearScale, PointElement, LineElement, Tooltip } = await import("chart.js");
-      Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
+      const { Chart, CategoryScale, LinearScale, PointElement, LineElement, LineController, Tooltip } = await import("chart.js");
+      Chart.register(CategoryScale, LinearScale, PointElement, LineElement, LineController, Tooltip);
       if (chartInstance.current) (chartInstance.current as { destroy: () => void }).destroy();
       const getCssVar = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
       chartInstance.current = new Chart(chartRef.current!, {

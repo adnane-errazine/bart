@@ -35,8 +35,7 @@ export function HomePage({ onNavigate }: Props) {
       {/* Index Strip */}
       <div className="index-strip">
         {INDICES.map((idx) => {
-          const dir = idx.change1d > 0 ? "up" : "down";
-          const cls = `delta ${dir}`;
+          const trendDir = idx.change30d > 0 ? "up" : "down";
           return (
             <div key={idx.id} className="index-card" onClick={() => onNavigate("indices")}>
               <div className="index-card-head">
@@ -46,11 +45,11 @@ export function HomePage({ onNavigate }: Props) {
               <div className="index-card-value">{idx.value.toFixed(2)}</div>
               <div className="caption">{idx.name.replace("BART ", "")}</div>
               <div className="index-card-meta">
-                <span className={cls}>
-                  <span className="delta-tri">{deltaTri(idx.change1d)}</span>
-                  {fmtPct(idx.change1d)}
+                <span className={`delta ${deltaClass(idx.change30d)}`}>
+                  <span className="delta-tri">{deltaTri(idx.change30d)}</span>
+                  {fmtPct(idx.change30d)}
                 </span>
-                <Sparkline values={idx.spark30d} direction={dir} />
+                <Sparkline values={idx.spark30d} direction={trendDir} />
               </div>
             </div>
           );

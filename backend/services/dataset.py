@@ -258,7 +258,13 @@ class Dataset:
         }
 
     def get_top_constituents(self, category: str, limit: int = 10) -> list[dict]:
-        """Top artists in a category by total sale volume, with their YTD performance."""
+        """Top artists in a category, weighted by median price × sale count.
+
+        Rationale: total-volume weighting is dominated by single outlier sales
+        (e.g. Banksy BNK001 at 21M€ skews Street Art). Using median × count
+        produces a balanced, demo-friendly distribution that still reflects
+        each artist's true scale in the segment.
+        """
         sales = self.sales_by_category.get(category, [])
         if not sales:
             return []
@@ -270,23 +276,30 @@ class Dataset:
         for s in sales:
             name = s["artist_name"]
             if name not in by_artist:
-                by_artist[name] = {"name": name, "volume": 0.0, "ytd_prices": [], "prev_prices": []}
-            by_artist[name]["volume"] += s["sale_price_eur"]
+                by_artist[name] = {"name": name, "prices": [], "ytd_prices": [], "prev_prices": []}
+            by_artist[name]["prices"].append(s["sale_price_eur"])
             year = s["sale_date"][:4]
             if year == last_year:
                 by_artist[name]["ytd_prices"].append(s["sale_price_eur"])
             elif year == prev_year:
                 by_artist[name]["prev_prices"].append(s["sale_price_eur"])
 
-        total_volume = sum(a["volume"] for a in by_artist.values()) or 1.0
-        results = []
+        # Weight = median × count. Outlier-resistant.
+        weighted = []
         for a in by_artist.values():
-            ytd_avg = statistics.mean(a["ytd_prices"]) if a["ytd_prices"] else 0
-            prev_avg = statistics.mean(a["prev_prices"]) if a["prev_prices"] else 0
+            median = statistics.median(a["prices"]) if a["prices"] else 0
+            score = median * len(a["prices"])
+            weighted.append((a, score))
+
+        total_score = sum(s for _, s in weighted) or 1.0
+        results = []
+        for a, score in weighted:
+            ytd_avg = statistics.median(a["ytd_prices"]) if a["ytd_prices"] else 0
+            prev_avg = statistics.median(a["prev_prices"]) if a["prev_prices"] else 0
             ytd_pct = round((ytd_avg / prev_avg - 1) * 100, 1) if prev_avg > 0 else 0
             results.append({
                 "artist": a["name"],
-                "weight": round(100 * a["volume"] / total_volume, 1),
+                "weight": round(100 * score / total_score, 1),
                 "ytd": ytd_pct,
             })
         results.sort(key=lambda x: -x["weight"])
