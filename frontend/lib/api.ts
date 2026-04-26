@@ -126,11 +126,12 @@ async function get<T>(path: string): Promise<T> {
 // ─── API surface ─────────────────────────────────────────────────────────
 
 export const api = {
-  artworks: (params?: { category?: string; artist_name?: string; limit?: number }) => {
+  artworks: (params?: { category?: string; artist_name?: string; limit?: number; offset?: number }) => {
     const q = new URLSearchParams();
     if (params?.category) q.set("category", params.category);
     if (params?.artist_name) q.set("artist_name", params.artist_name);
     if (params?.limit) q.set("limit", String(params.limit));
+    if (params?.offset) q.set("offset", String(params.offset));
     const qs = q.toString();
     return get<Artwork[]>(`/api/v1/artworks${qs ? `?${qs}` : ""}`);
   },

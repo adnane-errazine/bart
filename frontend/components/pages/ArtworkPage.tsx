@@ -1,37 +1,64 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fmtEur, fmtPct, deltaClass, synthPainting } from "@/lib/utils";
 import { ScoreCircle } from "@/components/ScoreCircle";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { api, type Artwork, type Sale, type Enrichment } from "@/lib/api";
 
 interface Props { artworkId?: string; onNavigate: (r: string, p?: string) => void; }
 
 const CATEGORIES = ["All", "Street Art", "Blue Chip", "Modern Masters", "Ultra-Contemporary", "Photography"];
+const PAGE_SIZE = 20;
+
+// ─── Score badge ──────────────────────────────────────────────────────────────
+
+function BartBadge({ score }: { score: number | null }) {
+  if (score == null) return <span className="mono text-tertiary">—</span>;
+  const color = score >= 85 ? "var(--color-up)" : score >= 70 ? "var(--accent-amber)" : "var(--text-secondary)";
+  return (
+    <span className="mono" style={{ color, fontWeight: 500 }}>{score.toFixed(0)}</span>
+  );
+}
 
 // ─── List view ────────────────────────────────────────────────────────────────
 
 function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => void }) {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [total, setTotal] = useState(0);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    api.artworks({ limit: 1000 }).then((data) => {
+  const fetchPage = useCallback((cat: string, q: string, pg: number) => {
+    setLoading(true);
+    const params: Parameters<typeof api.artworks>[0] = { limit: PAGE_SIZE, offset: pg * PAGE_SIZE };
+    if (cat !== "All") params.category = cat;
+    if (q.trim()) params.artist_name = q.trim();
+    api.artworks(params).then((data) => {
       setArtworks(data);
       setLoading(false);
     });
   }, []);
 
-  const visible = artworks
-    .filter((a) => category === "All" || a.category === category)
-    .filter((a) => {
-      if (!search) return true;
-      const q = search.toLowerCase();
-      return a.title.toLowerCase().includes(q) || a.artist_name.toLowerCase().includes(q);
-    });
+  // Load total count for pagination (once per category/search)
+  useEffect(() => {
+    const params: Parameters<typeof api.artworks>[0] = { limit: 1000 };
+    if (category !== "All") params.category = category;
+    api.artworks(params).then((all) => setTotal(all.length));
+  }, [category]);
+
+  useEffect(() => {
+    setPage(0);
+    fetchPage(category, search, 0);
+  }, [category, search, fetchPage]);
+
+  useEffect(() => {
+    fetchPage(category, search, page);
+  }, [page, category, search, fetchPage]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="page">
@@ -39,11 +66,11 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
         <div className="page-header-left">
           <div className="eyebrow">Collection</div>
           <h1 className="h1" style={{ marginTop: 6 }}>Artworks</h1>
-          <div className="caption mt-4">{artworks.length} works tracked · sorted by BART score</div>
+          <div className="caption mt-4">{total} works · sorted by BART score</div>
         </div>
       </div>
 
-      <div className="filter-bar" style={{ alignItems: "center" }}>
+      <div className="filter-bar" style={{ alignItems: "center", marginBottom: 12 }}>
         {CATEGORIES.map((c) => (
           <button key={c} className={`pill${category === c ? " active" : ""}`} onClick={() => setCategory(c)}>
             {c}
@@ -51,37 +78,101 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
         ))}
         <input
           type="text"
-          placeholder="Artist or title…"
+          placeholder="Search artist…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ marginLeft: "auto", width: 200 }}
+          style={{ marginLeft: "auto", width: 180, padding: "4px 8px", background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)", fontSize: 12 }}
         />
       </div>
 
-      {loading ? (
-        <div className="caption" style={{ padding: "24px 0" }}>Loading artworks…</div>
-      ) : (
-        <>
-          <div className="caption mb-16" style={{ color: "var(--text-tertiary)" }}>
-            {visible.length} works{category !== "All" ? ` · ${category}` : ""}
+      <div className="panel">
+        <div className="panel-body flush">
+          <table className="dtable">
+            <thead>
+              <tr>
+                <th style={{ width: 36 }}>#</th>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Segment</th>
+                <th>Year</th>
+                <th>Medium</th>
+                <th className="num">BART</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} className="caption" style={{ padding: "20px 16px" }}>Loading…</td></tr>
+              ) : artworks.length === 0 ? (
+                <tr><td colSpan={7} className="caption" style={{ padding: "20px 16px" }}>No results.</td></tr>
+              ) : artworks.map((a, i) => (
+                <tr
+                  key={a.id}
+                  className="clickable"
+                  onClick={() => onNavigate("artwork", a.id)}
+                >
+                  <td className="mono text-tertiary" style={{ fontSize: 11 }}>{page * PAGE_SIZE + i + 1}</td>
+                  <td>
+                    <div className="row-icon">
+                      <div className="row-thumb" dangerouslySetInnerHTML={{ __html: synthPainting(a.id.length * 3) }} />
+                      <div className="row-name" style={{ maxWidth: 240 }}>
+                        {a.title.length > 36 ? a.title.slice(0, 36) + "…" : a.title}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="row-sub" style={{ whiteSpace: "nowrap" }}>{a.artist_name}</td>
+                  <td className="muted" style={{ fontSize: 11 }}>
+                    {a.category.replace("Ultra-Contemporary", "Ultra-C").replace("Modern Masters", "Modern")}
+                  </td>
+                  <td className="mono muted" style={{ fontSize: 11 }}>{a.year_created ?? "—"}</td>
+                  <td className="muted" style={{ fontSize: 11, maxWidth: 160 }}>
+                    {a.medium ? (a.medium.length > 22 ? a.medium.slice(0, 22) + "…" : a.medium) : "—"}
+                  </td>
+                  <td className="num"><BartBadge score={a.bart_score} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderTop: "1px solid var(--border-subtle)" }}>
+            <span className="caption mono">
+              {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+            </span>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                className="tool-btn"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                style={{ padding: "4px 8px", display: "flex", alignItems: "center" }}
+              >
+                <ChevronLeft size={13} />
+              </button>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                const pg = totalPages <= 7 ? i : page < 4 ? i : page > totalPages - 5 ? totalPages - 7 + i : page - 3 + i;
+                return (
+                  <button
+                    key={pg}
+                    className={`tool-btn${pg === page ? " active" : ""}`}
+                    onClick={() => setPage(pg)}
+                    style={{ padding: "4px 10px", fontFamily: "var(--font-mono)", fontSize: 11 }}
+                  >
+                    {pg + 1}
+                  </button>
+                );
+              })}
+              <button
+                className="tool-btn"
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                style={{ padding: "4px 8px", display: "flex", alignItems: "center" }}
+              >
+                <ChevronRight size={13} />
+              </button>
+            </div>
           </div>
-          <div className="artwork-grid">
-            {visible.slice(0, 120).map((a) => (
-              <div key={a.id} className="artwork-card" onClick={() => onNavigate("artwork", a.id)}>
-                <div className="artwork-card-img" dangerouslySetInnerHTML={{ __html: synthPainting(a.id.length * 3) }} />
-                <div className="artwork-card-body">
-                  <div className="row-name" style={{ fontSize: 12 }}>{a.title.slice(0, 32)}{a.title.length > 32 ? "…" : ""}</div>
-                  <div className="row-sub">{a.artist_name}</div>
-                  <div className="artwork-card-footer">
-                    <span className="caption" style={{ color: "var(--text-tertiary)", fontSize: 10 }}>{a.year_created ?? "—"}</span>
-                    <span className="mono text-amber" style={{ fontSize: 11 }}>BART {a.bart_score?.toFixed(0) ?? "—"}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -215,7 +306,7 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
       <div className="tabs">
         {[
           { id: "story", label: "Story" },
-          { id: "sales", label: "Sales History" },
+          { id: "sales", label: `Sales (${sales.length})` },
           { id: "score", label: "Score Breakdown" },
           { id: "drivers", label: "Value Drivers" },
         ].map((t) => (
@@ -228,21 +319,13 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
       {tab === "story" && (
         story && story.length > 0 ? (
           <div className="story-panel mb-24">
-            <div className="story-text">
-              {story.map((p, i) => <p key={i}>{p}</p>)}
-            </div>
+            <div className="story-text">{story.map((p, i) => <p key={i}>{p}</p>)}</div>
             <div className="story-side">
               <h4>Sources</h4>
               <ul>{(storySources ?? []).map((s) => <li key={s}>{s}</li>)}</ul>
               {press && press.length > 0 && (
-                <>
-                  <h4 style={{ marginTop: 16 }}>Press</h4>
-                  <ul>
-                    {press.map((p, i) => (
-                      <li key={i}>{p.year} · {p.outlet} — {p.headline}</li>
-                    ))}
-                  </ul>
-                </>
+                <><h4 style={{ marginTop: 16 }}>Press</h4>
+                  <ul>{press.map((p, i) => <li key={i}>{p.year} · {p.outlet} — {p.headline}</li>)}</ul></>
               )}
             </div>
           </div>
@@ -253,14 +336,8 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
               {artwork.creation_context && <p>{artwork.creation_context}</p>}
             </div>
             <div className="story-side">
-              <h4>Style</h4>
-              <p>{artwork.artwork_style ?? "—"}</p>
-              {artwork.notable_owners && (
-                <>
-                  <h4 style={{ marginTop: 16 }}>Notable owners</h4>
-                  <p>{artwork.notable_owners}</p>
-                </>
-              )}
+              <h4>Style</h4><p>{artwork.artwork_style ?? "—"}</p>
+              {artwork.notable_owners && (<><h4 style={{ marginTop: 16 }}>Notable owners</h4><p>{artwork.notable_owners}</p></>)}
             </div>
           </div>
         )
@@ -268,39 +345,36 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
 
       {tab === "sales" && (
         salesHistory.length > 0 ? (
-          <div className="sales-block mb-24">
-            <div className="sales-timeline">
-              {salesHistory.slice().reverse().map((s, i) => (
-                <div key={i} className="sales-timeline-item">
-                  <div className="sales-timeline-year">{s.year}</div>
-                  <div className="sales-timeline-body">
-                    <div className="sales-timeline-venue">{s.venue}</div>
-                    <div className="sales-timeline-detail">{s.detail}</div>
-                    <div className="sales-timeline-price">
-                      {fmtEur(s.price)}
-                      {s.deltaEst != null && (
-                        <span className={`delta ${deltaClass(s.deltaEst)}`} style={{ marginLeft: 8 }}>
-                          {s.deltaEst > 0 ? "+" : ""}{s.deltaEst}% est.
-                        </span>
-                      )}
-                    </div>
-                    {s.explanation && (
-                      <div className="sales-timeline-detail" style={{ marginTop: 4, fontStyle: "italic" }}>
-                        {s.explanation.slice(0, 180)}{s.explanation.length > 180 ? "…" : ""}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="sales-chart-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <p className="caption" style={{ color: "var(--text-tertiary)", textAlign: "center" }}>
-                {salesHistory.length} ventes consignées sur {salesHistory.length > 1 ? `${salesHistory[salesHistory.length - 1].year - salesHistory[0].year} ans` : "1 vente"}
-              </p>
+          <div className="panel mb-24">
+            <div className="panel-body flush">
+              <table className="dtable">
+                <thead>
+                  <tr>
+                    <th>Date</th><th>Venue</th><th className="num">Price</th><th className="num">vs Estimate</th><th>Context</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salesHistory.slice().reverse().map((s, i) => (
+                    <tr key={i}>
+                      <td className="mono muted" style={{ whiteSpace: "nowrap", width: 90 }}>{s.date}</td>
+                      <td className="row-name">{s.venue}</td>
+                      <td className="num mono">{fmtEur(s.price, true)}</td>
+                      <td className="num">
+                        {s.deltaEst != null
+                          ? <span className={`delta ${deltaClass(s.deltaEst)}`}>{s.deltaEst > 0 ? "+" : ""}{s.deltaEst}%</span>
+                          : <span className="text-tertiary">—</span>}
+                      </td>
+                      <td className="muted" style={{ fontSize: 11, maxWidth: 280 }}>
+                        {s.explanation ? s.explanation.slice(0, 100) + (s.explanation.length > 100 ? "…" : "") : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         ) : (
-          <div className="caption mb-24">No sale records on file for this artwork.</div>
+          <div className="caption mb-24">No sale records on file.</div>
         )
       )}
 
@@ -344,9 +418,7 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
             ))}
           </div>
         ) : (
-          <div className="caption mb-24">
-            Detailed score breakdown is available for hero artworks only. BART Score: <span className="mono">{artwork.bart_score ?? "—"}/100</span>.
-          </div>
+          <div className="caption mb-24">Score breakdown available for hero artworks. BART: <span className="mono">{artwork.bart_score ?? "—"}/100</span>.</div>
         )
       )}
 
@@ -363,12 +435,7 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
                 </div>
               ))}
             </div>
-            {riskBlock && (
-              <div className="risk-block">
-                <div className="risk-title">⚠ Liquidity & Risk Note</div>
-                <div className="risk-text">{riskBlock}</div>
-              </div>
-            )}
+            {riskBlock && <div className="risk-block"><div className="risk-title">⚠ Liquidity & Risk Note</div><div className="risk-text">{riskBlock}</div></div>}
             {provenance && provenance.length > 0 && (
               <div className="provenance-block mt-24">
                 <div className="provenance-timeline">
@@ -397,8 +464,8 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
           </div>
         ) : (
           <div className="caption mb-24">
-            AI-enriched value drivers are pre-generated for hero artworks (BNK001, PCB002, JDF001). For other works, see the{" "}
-            <a onClick={() => setTab("sales")} style={{ color: "var(--accent-amber)", cursor: "pointer" }}>Sales History</a> tab.
+            AI-enriched drivers available for hero artworks (BNK001, PCB002, JDF001). See{" "}
+            <a onClick={() => setTab("sales")} style={{ color: "var(--accent-amber)", cursor: "pointer" }}>Sales History</a>.
           </div>
         )
       )}

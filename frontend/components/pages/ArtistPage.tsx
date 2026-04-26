@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { fmtEur, synthPainting } from "@/lib/utils";
 import { ScoreCircle } from "@/components/ScoreCircle";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { api, type ArtistSummary, type Artist } from "@/lib/api";
 
 interface Props {
@@ -12,12 +12,15 @@ interface Props {
 }
 
 const CATEGORIES = ["All", "Street Art", "Blue Chip", "Modern Masters", "Ultra-Contemporary", "Photography"];
+const PAGE_SIZE = 20;
 
 // ─── List view ────────────────────────────────────────────────────────────────
 
 function ArtistList({ onNavigate }: { onNavigate: (r: string, p?: string) => void }) {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [category, setCategory] = useState("All");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,7 +30,17 @@ function ArtistList({ onNavigate }: { onNavigate: (r: string, p?: string) => voi
     });
   }, []);
 
-  const visible = artists.filter((a) => category === "All" || a.category === category);
+  const filtered = artists.filter((a) => {
+    const matchCat = category === "All" || a.category === category;
+    const matchSearch = !search.trim() || a.name.toLowerCase().includes(search.trim().toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageArtists = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const handleFilter = (cat: string) => { setCategory(cat); setPage(0); };
+  const handleSearch = (q: string) => { setSearch(q); setPage(0); };
 
   return (
     <div className="page">
@@ -35,56 +48,111 @@ function ArtistList({ onNavigate }: { onNavigate: (r: string, p?: string) => voi
         <div className="page-header-left">
           <div className="eyebrow">Directory</div>
           <h1 className="h1" style={{ marginTop: 6 }}>Artists</h1>
-          <div className="caption mt-4">{artists.length} artists tracked</div>
+          <div className="caption mt-4">{filtered.length} artist{filtered.length !== 1 ? "s" : ""} tracked</div>
         </div>
       </div>
 
-      <div className="filter-bar">
+      <div className="filter-bar" style={{ alignItems: "center", marginBottom: 12 }}>
         {CATEGORIES.map((c) => (
-          <button key={c} className={`pill${category === c ? " active" : ""}`} onClick={() => setCategory(c)}>
+          <button key={c} className={`pill${category === c ? " active" : ""}`} onClick={() => handleFilter(c)}>
             {c}
           </button>
         ))}
+        <input
+          type="text"
+          placeholder="Search artist…"
+          value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+          style={{ marginLeft: "auto", width: 180, padding: "4px 8px", background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)", fontSize: 12 }}
+        />
       </div>
 
-      {loading ? (
-        <div className="caption" style={{ padding: "24px 0" }}>Loading artists…</div>
-      ) : (
-        <div className="peer-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
-          {visible.map((a) => (
-            <div key={a.id} className="peer-card" onClick={() => onNavigate("artist", a.id)}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <div
-                  style={{ width: 40, height: 40, flexShrink: 0 }}
-                  dangerouslySetInnerHTML={{ __html: synthPainting(a.id.length * 7) }}
-                />
-                <div>
-                  <div className="peer-name">{a.name}</div>
-                  <div className="peer-meta" style={{ fontSize: 10 }}>{a.category}</div>
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px", fontSize: 11 }}>
-                <div>
-                  <div style={{ color: "var(--text-tertiary)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>Works</div>
-                  <div className="mono">{a.artwork_count}</div>
-                </div>
-                <div>
-                  <div style={{ color: "var(--text-tertiary)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>Sales</div>
-                  <div className="mono">{a.sales_count}</div>
-                </div>
-                <div>
-                  <div style={{ color: "var(--text-tertiary)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>Median</div>
-                  <div className="mono text-amber">{fmtEur(a.median_price_eur, true)}</div>
-                </div>
-                <div>
-                  <div style={{ color: "var(--text-tertiary)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>Max</div>
-                  <div className="mono">{fmtEur(a.max_price_eur, true)}</div>
-                </div>
-              </div>
-            </div>
-          ))}
+      <div className="panel">
+        <div className="panel-body flush">
+          <table className="dtable">
+            <thead>
+              <tr>
+                <th style={{ width: 36 }}>#</th>
+                <th>Artist</th>
+                <th>Segment</th>
+                <th className="num">Works</th>
+                <th className="num">Sales</th>
+                <th className="num">Avg Price</th>
+                <th className="num">Median</th>
+                <th className="num">Max</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={8} className="caption" style={{ padding: "20px 16px" }}>Loading…</td></tr>
+              ) : pageArtists.length === 0 ? (
+                <tr><td colSpan={8} className="caption" style={{ padding: "20px 16px" }}>No results.</td></tr>
+              ) : pageArtists.map((a, i) => (
+                <tr
+                  key={a.id}
+                  className="clickable"
+                  onClick={() => onNavigate("artist", a.id)}
+                >
+                  <td className="mono text-tertiary" style={{ fontSize: 11 }}>{page * PAGE_SIZE + i + 1}</td>
+                  <td>
+                    <div className="row-icon">
+                      <div className="row-thumb" dangerouslySetInnerHTML={{ __html: synthPainting(a.id.length * 7) }} />
+                      <div className="row-name">{a.name}</div>
+                    </div>
+                  </td>
+                  <td className="muted" style={{ fontSize: 11 }}>
+                    {a.category.replace("Ultra-Contemporary", "Ultra-C").replace("Modern Masters", "Modern")}
+                  </td>
+                  <td className="num mono muted" style={{ fontSize: 11 }}>{a.artwork_count}</td>
+                  <td className="num mono muted" style={{ fontSize: 11 }}>{a.sales_count}</td>
+                  <td className="num mono" style={{ fontSize: 11 }}>{fmtEur(a.avg_price_eur, true)}</td>
+                  <td className="num mono text-amber" style={{ fontSize: 11 }}>{fmtEur(a.median_price_eur, true)}</td>
+                  <td className="num mono" style={{ fontSize: 11 }}>{fmtEur(a.max_price_eur, true)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {totalPages > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderTop: "1px solid var(--border-subtle)" }}>
+            <span className="caption mono">
+              {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </span>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                className="tool-btn"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                style={{ padding: "4px 8px", display: "flex", alignItems: "center" }}
+              >
+                <ChevronLeft size={13} />
+              </button>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                const pg = totalPages <= 7 ? i : page < 4 ? i : page > totalPages - 5 ? totalPages - 7 + i : page - 3 + i;
+                return (
+                  <button
+                    key={pg}
+                    className={`tool-btn${pg === page ? " active" : ""}`}
+                    onClick={() => setPage(pg)}
+                    style={{ padding: "4px 10px", fontFamily: "var(--font-mono)", fontSize: 11 }}
+                  >
+                    {pg + 1}
+                  </button>
+                );
+              })}
+              <button
+                className="tool-btn"
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                style={{ padding: "4px 8px", display: "flex", alignItems: "center" }}
+              >
+                <ChevronRight size={13} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
