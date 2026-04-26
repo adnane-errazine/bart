@@ -111,7 +111,7 @@ export const ARTWORKS = [
 ];
 
 export const WATCHLIST = [
-  { artworkId: "BNK001", title: "Girl with Balloon → Love is in the Bin", artist: "Banksy", artistId: "ART_BNK", segment: "Street Art",       addedPrice: 1186000,   currentFV: 21850000, deltaFV: 1741.5, bartScore: 91 },
+  { artworkId: "BNK001", title: "Love is in the Bin", artist: "Banksy", artistId: "ART_BNK", segment: "Street Art",       addedPrice: 1186000,   currentFV: 21850000, deltaFV: 1741.5, bartScore: 91 },
   { artworkId: "PCB002", title: "Femmes d'Alger (Version O)",             artist: "Picasso", artistId: "ART_PCB", segment: "Blue Chip",        addedPrice: 158000000, currentFV: 179000000, deltaFV: 13.3, bartScore: 96 },
   { artworkId: "JDF001", title: "A Vortex of Pillows",                    artist: "Jade Fadojutimi", artistId: "ART_JDF", segment: "Ultra-Contemporary", addedPrice: 540000,   currentFV: 720000,   deltaFV: 33.3, bartScore: 90 },
   { artworkId: "WAR001", title: "Shot Sage Blue Marilyn",                 artist: "Warhol", artistId: "ART_WAR",  segment: "Blue Chip",        addedPrice: 175000000, currentFV: 195000000, deltaFV: 11.4, bartScore: 95 },
@@ -127,7 +127,7 @@ export const PORTFOLIO = {
     { artworkId: "BNK001", title: "Love is in the Bin",                artist: "Banksy",   artistId: "ART_BNK", acquired: 1186000,   currentFV: 21850000, segment: "Street Art" },
     { artworkId: "JDF001", title: "A Vortex of Pillows",               artist: "Jade Fadojutimi", artistId: "ART_JDF", acquired: 540000, currentFV: 720000, segment: "Ultra-Contemporary" },
     { artworkId: "WAR001", title: "Shot Sage Blue Marilyn",            artist: "Warhol",   artistId: "ART_WAR", acquired: 175000000, currentFV: 195000000, segment: "Blue Chip" },
-    { artworkId: "PCB002", title: "Femmes d'Alger (Version O)",        artist: "Picasso",  artistId: "ART_PCB", acquired: 158000000, currentFV: 179000000, segment: "Blue Chip" },
+    // { artworkId: "PCB002", title: "Femmes d'Alger (Version O)",        artist: "Picasso",  artistId: "ART_PCB", acquired: 158000000, currentFV: 179000000, segment: "Blue Chip" },
     { artworkId: "GRS001", title: "Rhein II",                          artist: "Gursky",   artistId: "ART_GRS", acquired: 3800000, currentFV: 4338500, segment: "Photography" },
     { artworkId: "HCK001", title: "Portrait of an Artist",             artist: "Hockney",  artistId: "ART_HCK", acquired: 80000000, currentFV: 90300000, segment: "Modern Masters" },
   ],
@@ -166,11 +166,11 @@ export const AUCTIONS = [
 ];
 
 export const RECENT_RESULTS = [
-  { date: "11 NOV", artwork: "Lucy Bull · Untitled", house: "Christie's NY", est: "EUR 350–450k", sold: 450000, delta: 18.4, bought_in: false },
-  { date: "11 NOV", artwork: "Jadé Fadojutimi · Vortex", house: "Phillips London", est: "EUR 480–620k", sold: 720000, delta: 28.6, bought_in: false },
-  { date: "08 NOV", artwork: "Cecily Brown · Studies", house: "Sotheby's NY", est: "EUR 2.4–3.2M", sold: 3680000, delta: 14.2, bought_in: false },
-  { date: "07 NOV", artwork: "Anna Weyant · Falling Woman", house: "Phillips NY", est: "EUR 600–800k", sold: 0, delta: 0, bought_in: true },
-  { date: "04 NOV", artwork: "KAWS · Companion", house: "Sotheby's HK", est: "HK$8–12M", sold: 14800000, delta: 23.3, bought_in: false },
+  { date: "11 NOV", artwork: "Banksy · Love is in the Bin",      house: "Sotheby's London", est: "EUR 4.8–7.1M",  sold: 21850000, delta: 207.7, bought_in: false },
+  { date: "11 NOV", artwork: "Jade Fadojutimi · A Vortex",        house: "Phillips London",  est: "EUR 480–620k",  sold: 720000,   delta: 16.1, bought_in: false },
+  { date: "08 NOV", artwork: "Yoshitomo Nara · Knife Series",     house: "Sotheby's HK",     est: "EUR 2.4–3.2M",  sold: 3680000,  delta: 15.0, bought_in: false },
+  { date: "07 NOV", artwork: "Avery Singer · Studio (lot 117)",   house: "Phillips NY",      est: "EUR 600–800k",  sold: 0,        delta: 0,    bought_in: true },
+  { date: "04 NOV", artwork: "KAWS · Companion (Bronze)",         house: "Sotheby's HK",     est: "HK$8–12M",      sold: 14800000, delta: 23.3, bought_in: false },
 ];
 
 export const ARTISTS = [
@@ -248,10 +248,10 @@ export const REPORTS = [
 ];
 
 export const TOP_MOVERS = [
-  { artist: "Robert Nava", segment: "Ultra-Contemporary", move: 31.2, driver: "Pace signing", direction: "up" },
-  { artist: "Invader", segment: "Street & Urban", move: 41.2, driver: "NFT cross-buyer flow", direction: "up" },
-  { artist: "Christina Quarles", segment: "Ultra-Contemporary", move: 18.4, driver: "MoCA show", direction: "up" },
-  { artist: "Anna Weyant", segment: "Ultra-Contemporary", move: -12.4, driver: "Sell-through erosion", direction: "down" },
-  { artist: "Issy Wood", segment: "Ultra-Contemporary", move: -14.8, driver: "Phillips withdrawal", direction: "down" },
-  { artist: "Avery Singer", segment: "Ultra-Contemporary", move: 14.7, driver: "Hauser & Wirth Basel", direction: "up" },
+  { artist: "Banksy",            segment: "Street Art",         move: 92.5,  driver: "Love is in the Bin record at Sotheby's", direction: "up" },
+  { artist: "Jade Fadojutimi",   segment: "Ultra-Contemporary", move: 33.3,  driver: "Phillips London adjudication +16% est.",  direction: "up" },
+  { artist: "Yoshitomo Nara",    segment: "Ultra-Contemporary", move: 22.1,  driver: "Sotheby's HK Knife Series block",         direction: "up" },
+  { artist: "Hockney",           segment: "Modern Masters",     move: 12.9,  driver: "Pool with Two Figures resurfacing",       direction: "up" },
+  { artist: "Avery Singer",      segment: "Ultra-Contemporary", move: -8.4,  driver: "Phillips NY lot withdrawn pre-sale",      direction: "down" },
+  { artist: "KAWS",              segment: "Street Art",         move: -6.4,  driver: "Companion bronze sell-through erosion",   direction: "down" },
 ];
