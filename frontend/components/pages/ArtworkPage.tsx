@@ -8,10 +8,87 @@ import { api, type Artwork, type Sale, type Enrichment } from "@/lib/api";
 
 interface Props { artworkId?: string; onNavigate: (r: string, p?: string) => void; }
 
-const DEFAULT_ID = "BNK001";
+const CATEGORIES = ["All", "Street Art", "Blue Chip", "Modern Masters", "Ultra-Contemporary", "Photography"];
 
-export function ArtworkPage({ artworkId, onNavigate }: Props) {
-  const id = artworkId ?? DEFAULT_ID;
+// ─── List view ────────────────────────────────────────────────────────────────
+
+function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => void }) {
+  const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [category, setCategory] = useState("All");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.artworks({ limit: 1000 }).then((data) => {
+      setArtworks(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const visible = artworks
+    .filter((a) => category === "All" || a.category === category)
+    .filter((a) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return a.title.toLowerCase().includes(q) || a.artist_name.toLowerCase().includes(q);
+    });
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div className="page-header-left">
+          <div className="eyebrow">Collection</div>
+          <h1 className="h1" style={{ marginTop: 6 }}>Artworks</h1>
+          <div className="caption mt-4">{artworks.length} works tracked · sorted by BART score</div>
+        </div>
+      </div>
+
+      <div className="filter-bar" style={{ alignItems: "center" }}>
+        {CATEGORIES.map((c) => (
+          <button key={c} className={`pill${category === c ? " active" : ""}`} onClick={() => setCategory(c)}>
+            {c}
+          </button>
+        ))}
+        <input
+          type="text"
+          placeholder="Artist or title…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ marginLeft: "auto", width: 200 }}
+        />
+      </div>
+
+      {loading ? (
+        <div className="caption" style={{ padding: "24px 0" }}>Loading artworks…</div>
+      ) : (
+        <>
+          <div className="caption mb-16" style={{ color: "var(--text-tertiary)" }}>
+            {visible.length} works{category !== "All" ? ` · ${category}` : ""}
+          </div>
+          <div className="artwork-grid">
+            {visible.slice(0, 120).map((a) => (
+              <div key={a.id} className="artwork-card" onClick={() => onNavigate("artwork", a.id)}>
+                <div className="artwork-card-img" dangerouslySetInnerHTML={{ __html: synthPainting(a.id.length * 3) }} />
+                <div className="artwork-card-body">
+                  <div className="row-name" style={{ fontSize: 12 }}>{a.title.slice(0, 32)}{a.title.length > 32 ? "…" : ""}</div>
+                  <div className="row-sub">{a.artist_name}</div>
+                  <div className="artwork-card-footer">
+                    <span className="caption" style={{ color: "var(--text-tertiary)", fontSize: 10 }}>{a.year_created ?? "—"}</span>
+                    <span className="mono text-amber" style={{ fontSize: 11 }}>BART {a.bart_score?.toFixed(0) ?? "—"}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Detail view ──────────────────────────────────────────────────────────────
+
+function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigate: (r: string, p?: string) => void }) {
   const [tab, setTab] = useState("story");
   const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [sales, setSales] = useState<Sale[]>([]);
@@ -21,10 +98,11 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setTab("story");
     Promise.all([
-      api.artwork(id),
-      api.sales(id),
-      api.enrichment(id).catch(() => null),
+      api.artwork(artworkId),
+      api.sales(artworkId),
+      api.enrichment(artworkId).catch(() => null),
     ]).then(([a, s, e]) => {
       if (cancelled) return;
       setArtwork(a);
@@ -33,7 +111,7 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [id]);
+  }, [artworkId]);
 
   if (loading || !artwork) {
     return <div className="page"><div className="caption">Loading artwork…</div></div>;
@@ -49,7 +127,6 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
   const riskBlock = enrichment?.risk_block;
   const press = enrichment?.press_highlights;
 
-  // Build a sales timeline shape from API sales
   const salesHistory = sales.map((s) => {
     const deltaEst = s.estimate_high_eur ? Math.round((s.sale_price_eur / s.estimate_high_eur - 1) * 100) : null;
     return {
@@ -65,9 +142,13 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
 
   return (
     <div className="page">
-      <button className="tool-btn mb-16 flex gap-4 items-center" style={{ display: "flex" }} onClick={() => onNavigate("home")}>
+      <button
+        className="tool-btn mb-16"
+        style={{ display: "flex", alignItems: "center", gap: 4 }}
+        onClick={() => onNavigate("artwork")}
+      >
         <ArrowLeft size={12} strokeWidth={1.6} />
-        Home
+        All Artworks
       </button>
 
       <div className="artwork-header">
@@ -111,17 +192,6 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
               </div>
             ))}
           </div>
-
-          <div className="action-bar">
-            {[
-              { label: "Add to Watchlist", primary: false },
-              { label: "Run Valuation", primary: false },
-              { label: "Generate Report", primary: false },
-              { label: "Contact Expert", primary: true },
-            ].map((btn) => (
-              <button key={btn.label} className={`action-btn${btn.primary ? " primary" : ""}`}>{btn.label}</button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -155,7 +225,6 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
         ))}
       </div>
 
-      {/* Story */}
       {tab === "story" && (
         story && story.length > 0 ? (
           <div className="story-panel mb-24">
@@ -192,15 +261,11 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
                   <p>{artwork.notable_owners}</p>
                 </>
               )}
-              <p style={{ marginTop: 16, color: "var(--text-tertiary)", fontSize: 10 }}>
-                Enrichment narrative not available for this work. Showing CSV metadata.
-              </p>
             </div>
           </div>
         )
       )}
 
-      {/* Sales */}
       {tab === "sales" && (
         salesHistory.length > 0 ? (
           <div className="sales-block mb-24">
@@ -239,7 +304,6 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
         )
       )}
 
-      {/* Score */}
       {tab === "score" && (
         sb ? (
           <div className="breakdown-grid mb-24">
@@ -286,7 +350,6 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
         )
       )}
 
-      {/* Drivers */}
       {tab === "drivers" && (
         drivers && drivers.length > 0 ? (
           <div className="mb-24">
@@ -334,7 +397,8 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
           </div>
         ) : (
           <div className="caption mb-24">
-            AI-enriched value drivers are pre-generated for hero artworks (BNK001, PCB002, JDF001). For other works, see the <a onClick={() => setTab("sales")} style={{ color: "var(--accent-amber)", cursor: "pointer" }}>Sales History</a> tab where each transaction includes a market context note.
+            AI-enriched value drivers are pre-generated for hero artworks (BNK001, PCB002, JDF001). For other works, see the{" "}
+            <a onClick={() => setTab("sales")} style={{ color: "var(--accent-amber)", cursor: "pointer" }}>Sales History</a> tab.
           </div>
         )
       )}
@@ -345,4 +409,11 @@ export function ArtworkPage({ artworkId, onNavigate }: Props) {
       </div>
     </div>
   );
+}
+
+// ─── Router ───────────────────────────────────────────────────────────────────
+
+export function ArtworkPage({ artworkId, onNavigate }: Props) {
+  if (!artworkId) return <ArtworkList onNavigate={onNavigate} />;
+  return <ArtworkDetail artworkId={artworkId} onNavigate={onNavigate} />;
 }

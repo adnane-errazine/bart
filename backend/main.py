@@ -44,12 +44,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from api.v1 import artworks, sales, indices, chat, artists
+from api.v1 import artworks, sales, indices, chat, artists, signals
 
 app.include_router(artworks.router, prefix="/api/v1")
 app.include_router(sales.router, prefix="/api/v1")
 app.include_router(indices.router, prefix="/api/v1")
 app.include_router(artists.router, prefix="/api/v1")
+app.include_router(signals.router, prefix="/api/v1")
 app.include_router(chat.router, prefix="/api/v1")
 
 

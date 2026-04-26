@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { fmtEur, synthPainting, monthlyLabels } from "@/lib/utils";
+import { fmtEur, synthPainting } from "@/lib/utils";
 import { ScoreCircle } from "@/components/ScoreCircle";
+import { ArrowLeft } from "lucide-react";
 import { api, type ArtistSummary, type Artist } from "@/lib/api";
 
 interface Props {
@@ -10,10 +11,87 @@ interface Props {
   onNavigate: (r: string, param?: string) => void;
 }
 
-const DEFAULT_ARTIST_ID = "ART_BNK";
+const CATEGORIES = ["All", "Street Art", "Blue Chip", "Modern Masters", "Ultra-Contemporary", "Photography"];
 
-export function ArtistPage({ artistId, onNavigate }: Props) {
-  const id = artistId ?? DEFAULT_ARTIST_ID;
+// ─── List view ────────────────────────────────────────────────────────────────
+
+function ArtistList({ onNavigate }: { onNavigate: (r: string, p?: string) => void }) {
+  const [artists, setArtists] = useState<Artist[]>([]);
+  const [category, setCategory] = useState("All");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.artists().then((data) => {
+      setArtists(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const visible = artists.filter((a) => category === "All" || a.category === category);
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div className="page-header-left">
+          <div className="eyebrow">Directory</div>
+          <h1 className="h1" style={{ marginTop: 6 }}>Artists</h1>
+          <div className="caption mt-4">{artists.length} artists tracked</div>
+        </div>
+      </div>
+
+      <div className="filter-bar">
+        {CATEGORIES.map((c) => (
+          <button key={c} className={`pill${category === c ? " active" : ""}`} onClick={() => setCategory(c)}>
+            {c}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="caption" style={{ padding: "24px 0" }}>Loading artists…</div>
+      ) : (
+        <div className="peer-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
+          {visible.map((a) => (
+            <div key={a.id} className="peer-card" onClick={() => onNavigate("artist", a.id)}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <div
+                  style={{ width: 40, height: 40, flexShrink: 0 }}
+                  dangerouslySetInnerHTML={{ __html: synthPainting(a.id.length * 7) }}
+                />
+                <div>
+                  <div className="peer-name">{a.name}</div>
+                  <div className="peer-meta" style={{ fontSize: 10 }}>{a.category}</div>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 12px", fontSize: 11 }}>
+                <div>
+                  <div style={{ color: "var(--text-tertiary)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>Works</div>
+                  <div className="mono">{a.artwork_count}</div>
+                </div>
+                <div>
+                  <div style={{ color: "var(--text-tertiary)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>Sales</div>
+                  <div className="mono">{a.sales_count}</div>
+                </div>
+                <div>
+                  <div style={{ color: "var(--text-tertiary)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>Median</div>
+                  <div className="mono text-amber">{fmtEur(a.median_price_eur, true)}</div>
+                </div>
+                <div>
+                  <div style={{ color: "var(--text-tertiary)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>Max</div>
+                  <div className="mono">{fmtEur(a.max_price_eur, true)}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Detail view ──────────────────────────────────────────────────────────────
+
+function ArtistDetail({ artistId, onNavigate }: { artistId: string; onNavigate: (r: string, p?: string) => void }) {
   const [artist, setArtist] = useState<ArtistSummary | null>(null);
   const [peers, setPeers] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,14 +102,14 @@ export function ArtistPage({ artistId, onNavigate }: Props) {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    Promise.all([api.artist(id), api.artists()]).then(([a, all]) => {
+    Promise.all([api.artist(artistId), api.artists()]).then(([a, all]) => {
       if (cancelled) return;
       setArtist(a);
       setPeers(all.filter((p) => p.category === a.category && p.id !== a.id).slice(0, 4));
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [id]);
+  }, [artistId]);
 
   useEffect(() => {
     if (!chartRef.current || !artist || artist.index_history.length === 0) return;
@@ -40,11 +118,10 @@ export function ArtistPage({ artistId, onNavigate }: Props) {
       Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
       if (chartInstance.current) (chartInstance.current as { destroy: () => void }).destroy();
       const getCssVar = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-      const labels = artist.index_history.map((p) => p.date);
       chartInstance.current = new Chart(chartRef.current!, {
         type: "line",
         data: {
-          labels,
+          labels: artist.index_history.map((p) => p.date),
           datasets: [{
             label: artist.name,
             data: artist.index_history.map((p) => p.value),
@@ -80,15 +157,20 @@ export function ArtistPage({ artistId, onNavigate }: Props) {
 
   return (
     <div className="page">
+      <button
+        className="tool-btn mb-16"
+        style={{ display: "flex", alignItems: "center", gap: 4 }}
+        onClick={() => onNavigate("artist")}
+      >
+        <ArrowLeft size={12} strokeWidth={1.6} />
+        All Artists
+      </button>
+
       <div className="page-header">
         <div className="page-header-left">
           <div className="eyebrow">Artists <span className="sep">/</span> {artist.category}</div>
           <h1 className="h1 serif" style={{ marginTop: 6 }}>{artist.name}</h1>
           <div className="caption mt-4">{artist.artwork_count} works tracked · {artist.sales_count} sales on record</div>
-        </div>
-        <div className="page-header-right">
-          <button className="tool-btn">Watchlist</button>
-          <button className="tool-btn">Export memo</button>
         </div>
       </div>
 
@@ -153,20 +235,29 @@ export function ArtistPage({ artistId, onNavigate }: Props) {
         </div>
       </div>
 
-      <div className="section">
-        <div className="section-header">
-          <div className="section-header-left"><div className="h2">Comparable Artists · {artist.category}</div></div>
+      {peers.length > 0 && (
+        <div className="section">
+          <div className="section-header">
+            <div className="section-header-left"><div className="h2">Comparable Artists · {artist.category}</div></div>
+          </div>
+          <div className="peer-grid">
+            {peers.map((p) => (
+              <div key={p.id} className="peer-card" onClick={() => onNavigate("artist", p.id)}>
+                <div className="peer-name">{p.name}</div>
+                <div className="peer-meta">{p.artwork_count} works · {p.sales_count} sales</div>
+                <div className="peer-score">{fmtEur(p.median_price_eur, true)}<span style={{ fontSize: 11, color: "var(--text-tertiary)" }}> median</span></div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="peer-grid">
-          {peers.map((p) => (
-            <div key={p.id} className="peer-card" onClick={() => onNavigate("artist", p.id)}>
-              <div className="peer-name">{p.name}</div>
-              <div className="peer-meta">{p.artwork_count} works · {p.sales_count} sales</div>
-              <div className="peer-score">{fmtEur(p.median_price_eur, true)}<span style={{ fontSize: 11, color: "var(--text-tertiary)" }}> median</span></div>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
+}
+
+// ─── Router ───────────────────────────────────────────────────────────────────
+
+export function ArtistPage({ artistId, onNavigate }: Props) {
+  if (!artistId) return <ArtistList onNavigate={onNavigate} />;
+  return <ArtistDetail artistId={artistId} onNavigate={onNavigate} />;
 }

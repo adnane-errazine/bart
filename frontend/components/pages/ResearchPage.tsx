@@ -47,14 +47,15 @@ function renderTokens(
   text: string,
   onNavigate: (r: string, p?: string) => void
 ): React.ReactNode {
-  const parts = text.split(/(\[\[(?:artwork|artist):[^\]]+\]\])/g);
+  const parts = text.split(/(\[\[(?:artwork|artist):[^\]]*\]\])/g);
   return parts.map((part, i) => {
-    const m = part.match(/^\[\[(artwork|artist):([^:]+):(.+)\]\]$/);
+    const m = part.match(/^\[\[(artwork|artist):([^:\]]+)(?::([^\]]*))?\]\]$/);
     if (m) {
       const [, type, id, name] = m;
+      const label = name?.trim() || (type === "artist" ? id.replace(/^ART_/, "") : id);
       return (
         <button key={i} className="entity-chip" onClick={() => onNavigate(type, id)}>
-          {name}
+          {label}
         </button>
       );
     }
@@ -107,15 +108,20 @@ function BartMessage({
       {msg.toolEvents && msg.toolEvents.length > 0 && (
         <ToolTrace events={msg.toolEvents} />
       )}
-      {msg.text
-        ? msg.text.split("\n").map((line, i) => (
-            <p key={i}>{renderTokens(line, onNavigate)}</p>
-          ))
-        : msg.streaming && (
-            <div className="thinking-dots">
-              <span /><span /><span />
-            </div>
-          )}
+      {msg.text ? (
+        msg.text.split("\n").map((line, i, arr) => (
+          <p key={i}>
+            {renderTokens(line, onNavigate)}
+            {msg.streaming && i === arr.length - 1 && (
+              <span className="streaming-cursor" />
+            )}
+          </p>
+        ))
+      ) : msg.streaming ? (
+        <div className="thinking-dots">
+          <span /><span /><span />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -173,9 +179,12 @@ export function ResearchPage({ onNavigate }: Props) {
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const streamingIndexRef = useRef<number>(-1);
+  // Buffer for smooth streaming — flushes to state via rAF instead of every token
+  const streamBufRef = useRef<string>("");
+  const rafRef = useRef<number>(0);
 
   // Scroll to bottom on new content
   useEffect(() => {
@@ -251,9 +260,10 @@ export function ResearchPage({ onNavigate }: Props) {
       const decoder = new TextDecoder();
       let buffer = "";
 
-      // Local accumulators so closure stays fresh via ref pattern
-      let currentText = "";
+      // Accumulators — text flushed via rAF for smooth rendering
       const currentTools: ToolEvent[] = [];
+      streamBufRef.current = "";
+      cancelAnimationFrame(rafRef.current);
 
       const updateMsg = (patch: Partial<Msg>) => {
         setMessages((prev) => {
@@ -265,6 +275,17 @@ export function ResearchPage({ onNavigate }: Props) {
           return next;
         });
       };
+
+      // rAF loop: flushes buffered text to state ~60fps instead of per-token
+      const scheduleFlush = () => {
+        rafRef.current = requestAnimationFrame(() => {
+          const buf = streamBufRef.current;
+          if (buf !== undefined) updateMsg({ text: buf });
+          // keep scheduling while streaming
+          if (loading) scheduleFlush();
+        });
+      };
+      scheduleFlush();
 
       while (true) {
         const { done, value } = await reader.read();
@@ -292,11 +313,13 @@ export function ResearchPage({ onNavigate }: Props) {
             updateMsg({ toolEvents: [...currentTools] });
 
           } else if (event.type === "text_delta") {
-            currentText += event.text as string;
-            updateMsg({ text: currentText });
+            // Write to buffer only — rAF loop drains it smoothly
+            streamBufRef.current += event.text as string;
 
           } else if (event.type === "done") {
-            updateMsg({ streaming: false });
+            // Final flush then mark done
+            cancelAnimationFrame(rafRef.current);
+            updateMsg({ text: streamBufRef.current, streaming: false });
           }
         }
       }

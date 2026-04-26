@@ -155,4 +155,21 @@ export const api = {
       headers: { "Content-Type": "application/json", ...NGROK_HEADERS },
       body: JSON.stringify({ message, history: history ?? [] }),
     }).then((r) => r.json() as Promise<{ response: string }>),
+  signals: () => get<Signal[]>(`/api/v1/signals`),
+  dailyBrief: () => get<DailyBrief>(`/api/v1/daily-brief`),
 };
+
+export interface Signal {
+  time: string;
+  type: "mover" | "fair-value" | "event" | "alert" | "watchlist" | "confidence";
+  text: string;
+  impact: string;
+  impactClass: "up" | "down" | "neutral";
+}
+
+export interface DailyBrief {
+  intro: string;
+  bullets: { artist: string; segment: string; move: number; text: string }[];
+  top_movers: { artist: string; segment: string; move: number; driver: string }[];
+  updated_at: string;
+}

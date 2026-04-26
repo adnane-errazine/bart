@@ -24,8 +24,8 @@ export default function App() {
 
   function navigate(r: string, param?: string) {
     setRoute(r);
-    if (r === "artwork" && param) setArtworkParam(param);
-    if (r === "artist" && param) setArtistParam(param);
+    if (r === "artwork") setArtworkParam(param);
+    if (r === "artist") setArtistParam(param);
   }
 
   function renderMain() {

@@ -1,13 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { SIGNALS } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { api, type Signal } from "@/lib/api";
 
-const TYPES = ["All", "mover", "fair-value", "event", "alert", "watchlist", "confidence"];
+const TYPES = ["All", "mover", "fair-value", "alert", "watchlist", "confidence"];
 
 export function SignalsPage() {
+  const [signals, setSignals] = useState<Signal[]>([]);
   const [filter, setFilter] = useState("All");
-  const visible = filter === "All" ? SIGNALS : SIGNALS.filter((s) => s.type === filter);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.signals().then((data) => {
+      setSignals(data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const visible = filter === "All" ? signals : signals.filter((s) => s.type === filter);
 
   return (
     <div className="page">
@@ -17,7 +27,7 @@ export function SignalsPage() {
           <h1 className="h1" style={{ marginTop: 6 }}>Signals</h1>
         </div>
         <div className="page-header-right">
-          <span className="mono caption">{SIGNALS.length} signals today</span>
+          <span className="mono caption">{signals.length} signals today</span>
         </div>
       </div>
 
@@ -32,7 +42,11 @@ export function SignalsPage() {
 
       <div className="panel">
         <div className="panel-body flush">
-          {visible.map((s, i) => (
+          {loading ? (
+            <div className="caption" style={{ padding: "24px 16px" }}>Loading signals…</div>
+          ) : visible.length === 0 ? (
+            <div className="caption" style={{ padding: "24px 16px" }}>No signals for this filter.</div>
+          ) : visible.map((s, i) => (
             <div key={i} className="signal-row">
               <div className="signal-time">{s.time}</div>
               <div className={`signal-type ${s.type}`}>

@@ -517,3 +517,16 @@ img, svg { display: block; max-width: 100%; }
 input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--border-subtle); outline: none; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; background: var(--accent-amber); cursor: pointer; border: 2px solid var(--bg-primary); }
 .spacer { flex: 1; }
+
+/* ARTWORK GRID (list view) */
+.artwork-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 4px; }
+.artwork-card { border: 1px solid var(--border-subtle); background: var(--bg-tertiary); cursor: pointer; transition: border-color 0.15s; }
+.artwork-card:hover { border-color: var(--accent-amber); }
+.artwork-card-img { aspect-ratio: 3/4; overflow: hidden; background: var(--bg-elevated); }
+.artwork-card-img > * { width: 100%; height: 100%; }
+.artwork-card-body { padding: 8px 10px; }
+.artwork-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
+
+/* STREAMING CURSOR */
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+.streaming-cursor { display: inline-block; width: 7px; height: 13px; background: var(--accent-amber); margin-left: 2px; vertical-align: text-bottom; animation: blink 0.9s step-end infinite; }

@@ -1,14 +1,22 @@
 "use client";
 
-import { WATCHLIST, PORTFOLIO, AUCTIONS, RECENT_RESULTS, TOP_MOVERS } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { WATCHLIST, PORTFOLIO, AUCTIONS, RECENT_RESULTS } from "@/lib/data";
+
 import { fmtEur, fmtPct, deltaTri, deltaClass, synthPainting } from "@/lib/utils";
 import { Sparkline } from "@/components/Sparkline";
 import { useIndices } from "@/lib/useIndices";
+import { api, type DailyBrief } from "@/lib/api";
 
 interface Props { onNavigate: (route: string, param?: string) => void; }
 
 export function HomePage({ onNavigate }: Props) {
   const { indices: INDICES } = useIndices();
+  const [brief, setBrief] = useState<DailyBrief | null>(null);
+
+  useEffect(() => {
+    api.dailyBrief().then(setBrief).catch(() => null);
+  }, []);
   return (
     <div className="page">
       <div className="page-header">
@@ -54,21 +62,27 @@ export function HomePage({ onNavigate }: Props) {
         <div className="panel">
           <div className="panel-head">
             <div className="panel-title">Daily Brief</div>
-            <div className="panel-meta">Curator + Signals · 14m ago</div>
+            <div className="panel-meta">{brief ? `Mis à jour ${brief.updated_at}` : "Chargement…"}</div>
           </div>
           <div className="daily-brief">
             <div className="daily-brief-intro">
-              Le marché ouvre la semaine sur un signal de force concentré sur l&apos;Ultra-Contemporary, porté par une vente Christie&apos;s NY exceptionnelle (Bull, Quarles) et un flux acheteur asiatique sur le Street segment. Les indices Blue Chip et Modern restent en consolidation latérale.
+              {brief?.intro ?? "Chargement du brief…"}
             </div>
-            <ul className="brief-bullets">
-              {[
-                <><strong>BART ULTRA-CONTEMPORARY</strong> +<span className="mono">1.42%</span> — <em>Lucy Bull</em> Quaver lot adjudicated <span className="mono">EUR 450k</span> at Christie&apos;s NY (+18% est.)</>,
-                <><strong>BART STREET & URBAN</strong> +<span className="mono">2.18%</span> driven by Invader Hong Kong secondary block, Confidence downgraded High to Medium</>,
-                <><strong>Whitney Biennial 2026</strong> shortlist leaked — 14 tracked artists incl. Quarles, Toor, Boafo. Historical inclusion driver +20–40% on 6M post-event window</>,
-                <><strong>Pinault Collection</strong> dispatching 4 Boafo paintings to Bourse de Commerce Q1 2026 rotation</>,
-                <><strong>Anna Weyant</strong> sell-through degraded -22pts trailing 90D, third unsold lot — Ultra-Contemporary downside watchlist alerted</>,
-              ].map((b, i) => <li key={i}>{b}</li>)}
-            </ul>
+            {brief && brief.bullets.length > 0 && (
+              <ul className="brief-bullets">
+                {brief.bullets.map((b, i) => (
+                  <li key={i}>
+                    <strong>{b.artist.toUpperCase()}</strong>
+                    {" "}
+                    <span className={`delta ${b.move > 0 ? "up" : "down"}`}>
+                      {b.move > 0 ? "+" : ""}{b.move}%
+                    </span>
+                    {" — "}
+                    {b.text}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
@@ -165,7 +179,7 @@ export function HomePage({ onNavigate }: Props) {
             <table className="dtable">
               <thead><tr><th>Artist</th><th className="num">Move</th><th>Driver</th></tr></thead>
               <tbody>
-                {TOP_MOVERS.map((m) => (
+                {(brief?.top_movers ?? []).map((m) => (
                   <tr key={m.artist}>
                     <td><div className="row-name">{m.artist}</div><div className="row-sub">{m.segment}</div></td>
                     <td className="num">
@@ -173,9 +187,12 @@ export function HomePage({ onNavigate }: Props) {
                         <span className="delta-tri">{deltaTri(m.move)}</span>{fmtPct(m.move)}
                       </span>
                     </td>
-                    <td className="muted">{m.driver}</td>
+                    <td className="muted">{m.driver.slice(0, 50)}</td>
                   </tr>
                 ))}
+                {!brief && (
+                  <tr><td colSpan={3} className="caption">Chargement…</td></tr>
+                )}
               </tbody>
             </table>
           </div>
