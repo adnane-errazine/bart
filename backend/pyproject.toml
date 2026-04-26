@@ -8,4 +8,7 @@ dependencies = [
     "anthropic",
     "python-dotenv",
     "pyngrok",
+    "aiosqlite>=0.22.1",
+    "openai>=2.32.0",
+    "qdrant-client>=1.17.1",
 ]

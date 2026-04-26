@@ -1,10 +1,18 @@
 """
 Global research chat agent — Claude Sonnet 4.6 with tool use over the
-in-memory Dataset.
+in-memory Dataset (+ Qdrant semantic search when available).
+
+Exposes `stream()` — an async generator that yields SSE-ready dicts:
+  {"type": "tool_start",  "name": str, "input": dict}
+  {"type": "tool_end",    "name": str, "summary": str}
+  {"type": "text_delta",  "text": str}
+  {"type": "done"}
 """
 from __future__ import annotations
 
+import json
 import os
+from typing import AsyncGenerator
 
 import anthropic
 
@@ -47,7 +55,6 @@ If the data is thin, say so in one sentence and reason from what exists."""
 
 
 def _blocks_to_dicts(content: list) -> list[dict]:
-    """Convert Anthropic SDK content blocks to plain dicts for message history."""
     result = []
     for block in content:
         if block.type == "text":
@@ -62,41 +69,76 @@ def _blocks_to_dicts(content: list) -> list[dict]:
     return result
 
 
-async def run(message: str, history: list[dict], dataset: Dataset) -> str:
-    """
-    Run one turn of the global research chat.
+def _tool_summary(name: str, result_json: str) -> str:
+    """Human-readable summary of a tool result for the traceability UI."""
+    try:
+        data = json.loads(result_json)
+        if isinstance(data, list):
+            return f"{len(data)} résultat{'s' if len(data) != 1 else ''}"
+        if isinstance(data, dict):
+            if "error" in data:
+                return f"erreur : {data['error']}"
+            if "artwork" in data:
+                title = data["artwork"].get("title", "")
+                n_sales = len(data.get("sales", []))
+                return f"{title} · {n_sales} vente{'s' if n_sales != 1 else ''}"
+            if "category" in data and "sale_count" in data:
+                return f"{data['sale_count']} ventes · moy. {data.get('avg_price_eur', 0):,.0f} €"
+    except Exception:
+        pass
+    return "ok"
 
-    Args:
-        message: The user's new message.
-        history: Previous turns as [{role, content}] — plain text only.
-        dataset: The in-memory Dataset used by all tools.
+
+async def stream(
+    message: str,
+    history: list[dict],
+    ds: Dataset,
+) -> AsyncGenerator[dict, None]:
+    """
+    Async generator for one chat turn.
+    Yields SSE event dicts; the route serialises them to text/event-stream.
     """
     client = anthropic.AsyncAnthropic(api_key=os.environ["CLAUDE_API_KEY"])
-
     messages: list[dict] = list(history) + [{"role": "user", "content": message}]
 
     while True:
-        response = await client.messages.create(
+        # ── Stream one Claude response ────────────────────────────────────
+        async with client.messages.stream(
             model="claude-sonnet-4-6",
             max_tokens=2048,
             system=SYSTEM,
             tools=TOOL_DEFS,
             messages=messages,
-        )
+        ) as s:
+            async for text in s.text_stream:
+                yield {"type": "text_delta", "text": text}
+            final = await s.get_final_message()
 
-        if response.stop_reason == "tool_use":
-            tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    result = dispatch_tool(block.name, block.input, dataset)
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result,
-                    })
+        if final.stop_reason != "tool_use":
+            break
 
-            messages.append({"role": "assistant", "content": _blocks_to_dicts(response.content)})
-            messages.append({"role": "user", "content": tool_results})
+        # ── Execute tool calls and yield trace events ─────────────────────
+        tool_use_blocks = [b for b in final.content if b.type == "tool_use"]
+        tool_results = []
 
-        else:
-            return next((b.text for b in response.content if b.type == "text"), "")
+        for block in tool_use_blocks:
+            yield {"type": "tool_start", "name": block.name, "input": block.input}
+
+            result_json = await dispatch_tool(block.name, block.input, ds)
+
+            yield {
+                "type": "tool_end",
+                "name": block.name,
+                "summary": _tool_summary(block.name, result_json),
+            }
+
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": result_json,
+            })
+
+        messages.append({"role": "assistant", "content": _blocks_to_dicts(final.content)})
+        messages.append({"role": "user", "content": tool_results})
+
+    yield {"type": "done"}
