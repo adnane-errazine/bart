@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { fmtEur, fmtPct, deltaClass, synthPainting } from "@/lib/utils";
 import { ScoreCircle } from "@/components/ScoreCircle";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
@@ -45,41 +45,55 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [total, setTotal] = useState(0);
   const [category, setCategory] = useState("All");
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortValue>("bart_score:desc");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const fetchPage = useCallback((cat: string, q: string, sortValue: SortValue, pg: number) => {
-    setLoading(true);
-    const params: Parameters<typeof api.artworks>[0] = {
-      limit: PAGE_SIZE,
-      offset: pg * PAGE_SIZE,
-      ...sortParams(q.trim() ? "relevance:desc" : sortValue),
-    };
-    if (cat !== "All") params.category = cat;
-    if (q.trim()) params.q = q.trim();
-    api.artworks(params).then((data) => {
-      setArtworks(data);
-      setLoading(false);
-    });
-  }, []);
-
-  // Load total count for pagination (once per category/search)
+  // Debounce search input → search (250ms) so each keystroke doesn't fan out a request.
   useEffect(() => {
-    const params: Parameters<typeof api.artworks>[0] = { limit: 1000 };
-    if (category !== "All") params.category = category;
-    if (search.trim()) params.q = search.trim();
-    api.artworks(params).then((all) => setTotal(all.length));
-  }, [category, search]);
+    const t = window.setTimeout(() => setSearch(searchInput), 250);
+    return () => window.clearTimeout(t);
+  }, [searchInput]);
 
   useEffect(() => {
     setPage(0);
   }, [category, search, sort]);
 
+  // Page fetch (with cancellation so stale typing doesn't overwrite latest).
   useEffect(() => {
-    fetchPage(category, search, sort, page);
-  }, [page, category, search, sort, fetchPage]);
+    const ctrl = new AbortController();
+    setLoading(true);
+    const params: Parameters<typeof api.artworks>[0] = {
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
+      ...sortParams(search.trim() ? "relevance:desc" : sort),
+    };
+    if (category !== "All") params.category = category;
+    if (search.trim()) params.q = search.trim();
+    api.artworks(params, ctrl.signal)
+      .then((data) => {
+        setArtworks(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (err?.name !== "AbortError") setLoading(false);
+      });
+    return () => ctrl.abort();
+  }, [page, category, search, sort]);
+
+  // Total count for pagination (cancelled on rapid typing too).
+  useEffect(() => {
+    const ctrl = new AbortController();
+    const params: Parameters<typeof api.artworks>[0] = { limit: 1000 };
+    if (category !== "All") params.category = category;
+    if (search.trim()) params.q = search.trim();
+    api.artworks(params, ctrl.signal)
+      .then((all) => setTotal(all.length))
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [category, search]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const sortLabel = search.trim() ? "Search relevance" : SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "BART score";
@@ -101,11 +115,11 @@ function ArtworkList({ onNavigate }: { onNavigate: (r: string, p?: string) => vo
           </button>
         ))}
         <input
-          type="text"
-          placeholder="Search artworks…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ marginLeft: "auto", width: 180, padding: "4px 8px", background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)", fontSize: 12 }}
+          type="search"
+          placeholder="Search title, artist, style…"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          style={{ marginLeft: "auto", width: 240, padding: "4px 8px", background: "var(--bg-tertiary)", border: "1px solid var(--border-subtle)", color: "var(--text-primary)", fontSize: 12 }}
         />
         <select
           className="form-select"
@@ -274,7 +288,7 @@ function ArtworkDetail({ artworkId, onNavigate }: { artworkId: string; onNavigat
       <button
         className="tool-btn mb-16"
         style={{ display: "flex", alignItems: "center", gap: 4 }}
-        onClick={() => onNavigate("artwork")}
+        onClick={() => onNavigate("artwork", "__list")}
       >
         <ArrowLeft size={12} strokeWidth={1.6} />
         All Artworks

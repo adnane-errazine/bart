@@ -21,7 +21,7 @@ import { useWatchlist } from "@/lib/watchlist";
 
 export default function App() {
   const [route, setRoute] = useState("home");
-  const [artworkParam, setArtworkParam] = useState<string | undefined>(undefined);
+  const [artworkParam, setArtworkParam] = useState<string | undefined>("BNK001");
   const [artistParam, setArtistParam] = useState<string | undefined>(undefined);
   const [navBadges, setNavBadges] = useState<Record<string, string | number>>({});
   const { ids: watchlistIds } = useWatchlist();
@@ -61,7 +61,11 @@ export default function App() {
 
   function navigate(r: string, param?: string) {
     setRoute(r);
-    if (r === "artwork") setArtworkParam(param);
+    if (r === "artwork") {
+      // "__list" sentinel = explicit list view; otherwise default landing is the Banksy hero.
+      if (param === "__list") setArtworkParam(undefined);
+      else setArtworkParam(param ?? "BNK001");
+    }
     if (r === "artist") setArtistParam(param);
   }
 

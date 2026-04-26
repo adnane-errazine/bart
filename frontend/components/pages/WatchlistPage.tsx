@@ -25,7 +25,7 @@ export function WatchlistPage({ onNavigate }: Props) {
           <div className="caption mt-4">{artworks.length} work{artworks.length !== 1 ? "s" : ""} tracked from the live artwork dataset</div>
         </div>
         <div className="page-header-right">
-          <button className="tool-btn" onClick={() => onNavigate("artwork")}>Add Work</button>
+          <button className="tool-btn" onClick={() => onNavigate("artwork", "__list")}>Add Work</button>
         </div>
       </div>
 

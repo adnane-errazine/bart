@@ -91,7 +91,7 @@ export function PortfolioPage({ onNavigate }: Props) {
           <h1 className="h1" style={{ marginTop: 6 }}>My Portfolio</h1>
         </div>
         <div className="page-header-right">
-          <button className="tool-btn" onClick={() => onNavigate("artwork")}>Add holding</button>
+          <button className="tool-btn" onClick={() => onNavigate("artwork", "__list")}>Add holding</button>
           <button className="tool-btn">IFRS 13 export</button>
           <button className="tool-btn">Rebalance</button>
         </div>

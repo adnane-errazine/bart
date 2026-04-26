@@ -117,8 +117,8 @@ const NGROK_HEADERS: Record<string, string> = {
   "ngrok-skip-browser-warning": "true",
 };
 
-async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { headers: NGROK_HEADERS });
+async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { headers: NGROK_HEADERS, signal });
   if (!res.ok) throw new Error(`${res.status} ${path}`);
   return res.json();
 }
@@ -149,7 +149,10 @@ function normalizeSignals(data: Partial<Signal>[]): Signal[] {
 // ─── API surface ─────────────────────────────────────────────────────────
 
 export const api = {
-  artworks: (params?: { category?: string; artist_name?: string; q?: string; sort_by?: "relevance" | string; sort_dir?: "asc" | "desc"; limit?: number; offset?: number }) => {
+  artworks: (
+    params?: { category?: string; artist_name?: string; q?: string; sort_by?: "relevance" | string; sort_dir?: "asc" | "desc"; limit?: number; offset?: number },
+    signal?: AbortSignal,
+  ) => {
     const q = new URLSearchParams();
     if (params?.category) q.set("category", params.category);
     if (params?.artist_name) q.set("artist_name", params.artist_name);
@@ -159,7 +162,7 @@ export const api = {
     if (params?.limit) q.set("limit", String(params.limit));
     if (params?.offset) q.set("offset", String(params.offset));
     const qs = q.toString();
-    return get<Artwork[]>(`/api/v1/artworks${qs ? `?${qs}` : ""}`);
+    return get<Artwork[]>(`/api/v1/artworks${qs ? `?${qs}` : ""}`, signal);
   },
   artwork: (id: string) => get<Artwork>(`/api/v1/artworks/${id}`),
   enrichment: (id: string) => get<Enrichment | null>(`/api/v1/artworks/${id}/enrichment`),
